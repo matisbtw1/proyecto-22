@@ -7,13 +7,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 public class Road {
     private final Texture tex;
 
-    // Constructor sin parámetros
     public Road() {
-        tex = new Texture(Gdx.files.internal("road_6lanes.png"));
+        tex = new Texture(Gdx.files.internal("carretera.png")); // fondo nuevo
     }
 
     public void render(SpriteBatch batch) {
-        // Dibuja el fondo de carretera (igual que antes)
+        // Dibuja el fondo escalado a toda la pantalla
         batch.draw(tex, 0, 0, 800, 480);
     }
 
