@@ -7,8 +7,6 @@ import com.badlogic.gdx.math.Rectangle;
 public abstract class Vehiculo {
     protected Texture texture;
     protected Rectangle bounds;
-    protected float speedX = 0f;
-    protected float speedY = 0f;
     protected boolean visible = true;
 
     public Vehiculo(Texture texture, float x, float y, float width, float height) {
@@ -23,11 +21,7 @@ public abstract class Vehiculo {
         batch.draw(texture, bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
-    public void dispose() {
-        if (texture != null) texture.dispose();
-    }
+    public void dispose() {}
 
     public Rectangle getBounds() { return bounds; }
-    public boolean isVisible() { return visible; }
-    public void setVisible(boolean v) { this.visible = v; }
 }
