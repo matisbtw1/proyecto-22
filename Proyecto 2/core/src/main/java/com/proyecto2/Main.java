@@ -9,116 +9,120 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class Main extends ApplicationAdapter {
-    // Mundo vertical “tipo celular”
-    public static final int VW = 540;   // ancho virtual (puedes usar 720)
-    public static final int VH = 960;   // alto virtual  (o 1280)
-
     private OrthographicCamera camera;
-    private Viewport viewport;
     private SpriteBatch batch;
     private BitmapFont font;
 
-    private Texture texRoad, texPlayer;
-
     private Road road;
-    private Auto auto;
     private Lluvia lluvia;
+    private Vehiculo vehiculo;
 
-    private enum State { RUN, GAME_OVER }
-    private State state = State.RUN;
+    private Texture autoTex; // player_lambo.png
+    private Texture motoTex; // MotoRoja.png
+
+    private boolean juegoIniciado = false;
+    private boolean gameOver = false;
+
+    // Tamaño del jugador (más grande)
+    private static final float PLAYER_W = 72f;
+    private static final float PLAYER_H = 128f;
 
     @Override
-    public void create () {
+    public void create() {
         camera = new OrthographicCamera();
-        viewport = new FitViewport(VW, VH, camera);
-        viewport.apply(true);
-
+        camera.setToOrtho(false, 800, 480);
         batch = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.WHITE);
 
-        // ⬇️ Fondo nuevo de 6 carriles
-        texRoad   = new Texture(Gdx.files.internal("road_6lanes.png"));
-        texPlayer = new Texture(Gdx.files.internal("player_lambo.png"));
+        road = new Road(); // fondo
+        autoTex = new Texture(Gdx.files.internal("player_lambo.png"));
+        motoTex = new Texture(Gdx.files.internal("MotoRoja.png"));
 
-        // Scroll de la carretera
-        road = new Road(texRoad, VW, VH, 420f);
-
-        // ⬇️ límites de carretera extraídos de Lluvia (coinciden con el PNG)
-        float roadLeft  = Lluvia.roadLeft(VW);
-        float roadRight = Lluvia.roadRight(VW);
-
-        // Jugador (más grande)
-        auto = new Auto(
-                texPlayer,
-                VW/2f - 64, 36,   // x, y
-                128, 280,         // w, h
-                roadLeft + 6, roadRight - 6
-        );
-
-        // ⬇️ crear spawner con tamaño del mundo
-        lluvia = new Lluvia();
-        lluvia.crear(VW, VH);
-
-        state = State.RUN;
-    }
-
-    private void reset() {
-        float roadLeft  = Lluvia.roadLeft(VW);
-        float roadRight = Lluvia.roadRight(VW);
-        auto = new Auto(texPlayer, VW/2f - 64, 36, 128, 280, roadLeft + 6, roadRight - 6);
-        lluvia.crear(VW, VH);
-        state = State.RUN;
+        lluvia = new Lluvia();  // enemigos (police_explorer)
+        lluvia.crear();
     }
 
     @Override
-    public void render () {
+    public void render() {
         float dt = Gdx.graphics.getDeltaTime();
-        Gdx.gl.glClearColor(0, 0, 0.2f, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        if (state == State.RUN) {
-            road.update(dt);
-            auto.update(dt);
-            lluvia.update(dt);
-            lluvia.chequearColision(auto);
-
-            if (lluvia.getErrores() >= 1) state = State.GAME_OVER;
-        } else {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) reset();
-        }
 
         camera.update();
         batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        road.draw(batch);
-        auto.render(batch);
-        lluvia.render(batch);
 
-        font.draw(batch, "Puntos: " + lluvia.getPuntos(), 16, VH - 16);
-        font.draw(batch, "Choques: " + lluvia.getErrores(), 16, VH - 40);
-        if (state == State.GAME_OVER) {
-            font.draw(batch, "GAME OVER - Presiona R para reiniciar", VW/2f - 170, VH/2f);
+        // Update
+        if (juegoIniciado && !gameOver) {
+            vehiculo.update(dt);
+            lluvia.update(dt);
+            lluvia.chequearColision(vehiculo);
+            if (lluvia.getErrores() >= 3) {
+                gameOver = true;
+            }
         }
+
+        // Render
+        batch.begin();
+        road.render(batch); // fondo primero
+
+        if (!juegoIniciado) {
+            font.draw(batch, "Selecciona tu vehiculo:", 300, 300);
+            font.draw(batch, "Presiona 1 para AUTO",     320, 260);
+            font.draw(batch, "Presiona 2 para MOTO",     320, 240);
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
+                // Auto se mueve lateral (tu clase Auto respeta límites 0..800)
+                vehiculo = new Auto(autoTex, 800/2f - PLAYER_W/2f, 20, PLAYER_W, PLAYER_H, 0, 800);
+                juegoIniciado = true;
+                gameOver = false;
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_2)) {
+                // Moto libre con derrape
+                vehiculo = new Moto(motoTex, 400 - PLAYER_W/2f, 100, PLAYER_W, PLAYER_H);
+                juegoIniciado = true;
+                gameOver = false;
+            }
+
+        } else if (gameOver) {
+            font.draw(batch, "GAME OVER", 360, 270);
+            font.draw(batch, "Presiona R para reiniciar", 310, 240);
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                resetGame();
+            }
+
+        } else {
+            lluvia.render(batch);
+            vehiculo.render(batch);
+
+            font.draw(batch, "Puntos: "  + lluvia.getPuntos(), 10, 470);
+            font.draw(batch, "Errores: " + lluvia.getErrores() + " / 3", 10, 450);
+        }
+
         batch.end();
     }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
+    private void resetGame() {
+        if (lluvia != null) lluvia.destruir();
+        lluvia = new Lluvia();
+        lluvia.crear();
+
+        vehiculo = null;
+        juegoIniciado = false;
+        gameOver = false;
     }
 
     @Override
-    public void dispose () {
-        if (auto != null) auto.dispose();
-        if (lluvia != null) lluvia.destruir();
-        if (batch != null) batch.dispose();
-        if (font != null) font.dispose();
-        if (texRoad != null) texRoad.dispose();
-        if (texPlayer != null) texPlayer.dispose();
+    public void dispose() {
+        if (vehiculo != null) vehiculo.dispose();
+        if (lluvia   != null) lluvia.destruir();
+        if (road     != null) road.dispose();
+
+        if (autoTex  != null) autoTex.dispose();
+        if (motoTex  != null) motoTex.dispose();
+
+        if (batch    != null) batch.dispose();
+        if (font     != null) font.dispose();
     }
 }

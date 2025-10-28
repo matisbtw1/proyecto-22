@@ -1,29 +1,23 @@
 package com.proyecto2;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Road {
     private final Texture tex;
-    private final int W, H;
-    private float y1 = 0, y2;
-    private float speed;
 
-    public Road(Texture tex, int W, int H, float speed) {
-        this.tex = tex; this.W = W; this.H = H; this.speed = speed;
-        this.y2 = H;
+    // Constructor sin parámetros
+    public Road() {
+        tex = new Texture(Gdx.files.internal("road_6lanes.png"));
     }
 
-    public void update(float dt) {
-        y1 -= speed * dt;
-        y2 -= speed * dt;
-        if (y1 <= -H) y1 = y2 + H;
-        if (y2 <= -H) y2 = y1 + H;
+    public void render(SpriteBatch batch) {
+        // Dibuja el fondo de carretera (igual que antes)
+        batch.draw(tex, 0, 0, 800, 480);
     }
 
-    public void draw(SpriteBatch batch) {
-        // Dibuja el PNG de la carretera ocupando todo el ancho y alto visibles
-        batch.draw(tex, 0, y1, W, H);
-        batch.draw(tex, 0, y2, W, H);
+    public void dispose() {
+        tex.dispose();
     }
 }

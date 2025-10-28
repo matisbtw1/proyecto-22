@@ -11,121 +11,124 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class Lluvia {
-    private final Array<Rectangle> objetos = new Array<>();
-    private Texture texEnemigo;
-    private Sound sPoint, sCrash;
-    private Music bgm;
+    private final Array<Rectangle> enemigos = new Array<>();
 
-    private long lastSpawnTime = 0L;
-    private float baseSpeed = 520f;
-    private int puntos = 0;
-    private int errores = 0;
+    private Texture texEnemigo;     // police_explorer.png
+    private Sound dropSound;        // se usa como “impacto”
+    private Music rainMusic;
 
-    private int VW, VH; // tamaño de mundo
+    private long  lastSpawnTime = 0L;
+    private long  spawnIntervalMs = 650;       // separación temporal entre autos
+    private float speed = 260f;                // velocidad de bajada (px/s)
 
-    // === Carretera por porcentaje ===
-    // (ajusta si tu PNG tiene márgenes distintos)
-    public static float roadLeft(float vw)  { return vw * 0.12f; }  // antes 0.16
-    public static float roadRight(float vw) { return vw * 0.88f; }  // antes 0.84
-    private static final int LANES = 6; // ← 3 por sentido
+    private int   errores = 0;                 // 0..3  (game over lo maneja Main)
+    private int   puntos  = 0;                 // puntaje entero mostrado en HUD
+    private float puntosFrac = 0f;             // acumulador fraccional para sumar por tiempo
+    private float puntosPorSegundo = 10f;      // +10 pts / segundo
 
-    // Tamaños (ajústalos si tu sprite es distinto)
-    private float OBJ_W = 120f;
-    private float OBJ_H = 260f;
-
+    // ======== Carriles (ajusta para que calce con tu road_6lanes.png) ========
+    private static final int   LANES = 4;
+    private static final float ROAD_LEFT  = 80f;  // borde izquierdo de la carretera útil
+    private static final float ROAD_RIGHT = 720f; // borde derecho de la carretera útil
+    private static final float EN_W = 72f;        // ancho del enemigo (más grande)
+    private static final float EN_H = 128f;       // alto del enemigo (más grande)
     private int lastLane = -1;
-    private long spawnIntervalMs = 650;
 
-    // rect temporal para colisiones
-    private final Rectangle tmp = new Rectangle();
+    public void crear() {
+        texEnemigo = new Texture(Gdx.files.internal("police_explorer.png"));
+        dropSound  = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
+        rainMusic  = new MusicSafe(Gdx.audio.newMusic(Gdx.files.internal("rain.mp3")));
+        rainMusic.setLooping(true);
+        rainMusic.play();
 
-    public void crear(int worldW, int worldH) {
-        this.VW = worldW; this.VH = worldH;
-        objetos.clear();
-        puntos = 0; errores = 0;
-
-        if (texEnemigo == null) texEnemigo = new Texture(Gdx.files.internal("police_explorer.png"));
-        try { if (sPoint == null) sPoint = Gdx.audio.newSound(Gdx.files.internal("point.wav")); } catch (Exception ignored) {}
-        try { if (sCrash == null) sCrash = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg")); }  catch (Exception ignored) {}
-        try {
-            if (bgm == null) { bgm = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3")); bgm.setLooping(true); bgm.play(); }
-        } catch (Exception ignored) {}
-
-        spawnObjeto();
+        spawnEnemigo();
     }
 
-    private void spawnObjeto() {
+    private void spawnEnemigo() {
         Rectangle r = new Rectangle();
-        r.y = VH + 10;
-        r.width = OBJ_W;
-        r.height = OBJ_H;
+        r.y = 480;
+        r.width  = EN_W;
+        r.height = EN_H;
 
-        float left  = roadLeft(VW);
-        float right = roadRight(VW);
-        float laneWidth = (right - left) / (float) LANES;
-
+        float laneWidth = (ROAD_RIGHT - ROAD_LEFT) / (float) LANES;
         int lane;
-        do { lane = MathUtils.random(0, LANES - 1); }
-        while (lane == lastLane && LANES > 1);
+        do {
+            lane = MathUtils.random(0, LANES - 1);
+        } while (LANES > 1 && lane == lastLane);   // evita repetir el mismo carril consecutivo
         lastLane = lane;
 
-        float laneCenterX = left + laneWidth * (lane + 0.5f);
-        r.x = laneCenterX - OBJ_W / 2f;
+        float laneCenterX = ROAD_LEFT + laneWidth * (lane + 0.5f);
+        r.x = laneCenterX - EN_W / 2f;
 
-        objetos.add(r);
+        enemigos.add(r);
         lastSpawnTime = TimeUtils.millis();
     }
 
     public void update(float dt) {
-        float speed = baseSpeed * (1f + puntos / 300f);
-        if (TimeUtils.timeSinceMillis(lastSpawnTime) > spawnIntervalMs) spawnObjeto();
+        // spawner
+        if (TimeUtils.timeSinceMillis(lastSpawnTime) > spawnIntervalMs) spawnEnemigo();
 
-        for (int i = objetos.size - 1; i >= 0; i--) {
-            Rectangle r = objetos.get(i);
+        // movimiento
+        for (int i = enemigos.size - 1; i >= 0; i--) {
+            Rectangle r = enemigos.get(i);
             r.y -= speed * dt;
             if (r.y + r.height < 0) {
-                objetos.removeIndex(i);
-                puntos += 10;
-                if (sPoint != null) sPoint.play(0.2f);
+                enemigos.removeIndex(i);
             }
+        }
+
+        // puntaje por tiempo (suave, sin perder fracción)
+        puntosFrac += puntosPorSegundo * dt;
+        if (puntosFrac >= 1f) {
+            int inc = (int) puntosFrac;
+            puntos += inc;
+            puntosFrac -= inc;
         }
     }
 
     public void render(SpriteBatch batch) {
-        for (Rectangle r : objetos) {
-            batch.draw(texEnemigo, r.x - 6, r.y - 6, r.width + 12, r.height + 12);
+        for (int i = 0; i < enemigos.size; i++) {
+            Rectangle r = enemigos.get(i);
+            batch.draw(texEnemigo, r.x, r.y, r.width, r.height);
         }
     }
 
-    public void chequearColision(Auto auto) {
-        // hitboxes reducidos (80%)
-        Rectangle hbPlayer = auto.getHitbox(0.8f, 0.8f);
-        for (int i = objetos.size - 1; i >= 0; i--) {
-            Rectangle r = objetos.get(i);
-            Rectangle hbEnemy = shrink(r, 0.78f, 0.78f);
-            if (hbEnemy.overlaps(hbPlayer)) {
+    public void chequearColision(Vehiculo vehiculo) {
+        for (int i = enemigos.size - 1; i >= 0; i--) {
+            Rectangle r = enemigos.get(i);
+            if (vehiculo.getBounds().overlaps(r)) {
                 errores += 1;
-                if (sCrash != null) sCrash.play(0.35f);
-                objetos.removeIndex(i);
+                if (dropSound != null) dropSound.play();
+                enemigos.removeIndex(i);
             }
         }
     }
 
-    private Rectangle shrink(Rectangle src, float sx, float sy) {
-        float nx = src.x + (1f - sx) * 0.5f * src.width;
-        float ny = src.y + (1f - sy) * 0.5f * src.height;
-        tmp.set(nx, ny, src.width * sx, src.height * sy);
-        return tmp;
-    }
-
-    public int getPuntos()  { return puntos; }
-    public int getErrores() { return errores; }
+    public int  getPuntos()  { return puntos; }
+    public int  getErrores() { return errores; }
 
     public void destruir() {
         if (texEnemigo != null) texEnemigo.dispose();
-        if (sPoint != null) sPoint.dispose();
-        if (sCrash != null) sCrash.dispose();
-        if (bgm != null) bgm.dispose();
-        texEnemigo = null; sPoint = null; sCrash = null; bgm = null;
+        if (dropSound  != null) dropSound.dispose();
+        if (rainMusic  != null) rainMusic.dispose();
+    }
+
+    // Wrapper para evitar NPE si cambias música
+    private static class MusicSafe implements Music {
+        private final Music m;
+        MusicSafe(Music m) { this.m = m; }
+        public void play(){ m.play(); }
+        public void pause(){ m.pause(); }
+        public void stop(){ m.stop(); }
+        public boolean isPlaying(){ return m.isPlaying(); }
+        public void setLooping(boolean b){ m.setLooping(b); }
+        public boolean isLooping(){ return m.isLooping(); }
+        public void setVolume(float v){ m.setVolume(v); }
+        public float getVolume(){ return m.getVolume(); }
+        public void setPan(float pan, float volume){ m.setPan(pan, volume); }
+        public void setPosition(float p){ m.setPosition(p); }
+        public float getPosition(){ return m.getPosition(); }
+        public void dispose(){ m.dispose(); }
+        public void setOnCompletionListener(OnCompletionListener l){ m.setOnCompletionListener(l); }
     }
 }

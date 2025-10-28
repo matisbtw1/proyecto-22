@@ -5,4 +5,8 @@ drop.wav
 dropBad.png
 hurt.ogg
 libgdx.png
+MotoRoja.png
+player_lambo.png
+police_explorer.png
 rain.mp3
+road_6lanes.png
