@@ -1,3 +1,4 @@
+AutoMalo.png
 bucket.png
 drop.png
 drop.wav
