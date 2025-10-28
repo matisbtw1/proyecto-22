@@ -11,88 +11,83 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class Lluvia {
-	private Array<Rectangle> rainDropsPos;
-	private Array<Integer> rainDropsType;
-    private long lastDropTime;
-    private Texture gotaBuena;
-    private Texture gotaMala;
+    private final Array<Rectangle> drops = new Array<Rectangle>();
+    private final Array<Integer> dropType = new Array<Integer>(); // 0 = azul (+puntos), 1 = roja (+error)
+    private Texture blueDropTex;
+    private Texture redDropTex;
     private Sound dropSound;
     private Music rainMusic;
-	   
-	public Lluvia(Texture gotaBuena, Texture gotaMala, Sound ss, Music mm) {
-		rainMusic = mm;
-		dropSound = ss;
-		this.gotaBuena = gotaBuena;
-		this.gotaMala = gotaMala;
-	}
-	
-	public void crear() {
-		rainDropsPos = new Array<Rectangle>();
-		rainDropsType = new Array<Integer>();
-		crearGotaDeLluvia();
-	      // start the playback of the background music immediately
-	      rainMusic.setLooping(true);
-	      rainMusic.play();
-	}
-	
-	private void crearGotaDeLluvia() {
-	      Rectangle raindrop = new Rectangle();
-	      raindrop.x = MathUtils.random(0, 800-64);
-	      raindrop.y = 480;
-	      raindrop.width = 64;
-	      raindrop.height = 64;
-	      rainDropsPos.add(raindrop);
-	      // ver el tipo de gota
-	      if (MathUtils.random(1,10)<3)	    	  
-	         rainDropsType.add(1);
-	      else 
-	    	 rainDropsType.add(2);
-	      lastDropTime = TimeUtils.nanoTime();
-	   }
-	
-   public void actualizarMovimiento(Tarro tarro) { 
-	   // generar gotas de lluvia 
-	   if(TimeUtils.nanoTime() - lastDropTime > 100000000) crearGotaDeLluvia();
-	  
-	   
-	   // revisar si las gotas cayeron al suelo o chocaron con el tarro
-	   for (int i=0; i < rainDropsPos.size; i++ ) {
-		  Rectangle raindrop = rainDropsPos.get(i);
-	      raindrop.y -= 300 * Gdx.graphics.getDeltaTime();
-	      //cae al suelo y se elimina
-	      if(raindrop.y + 64 < 0) {
-	    	  rainDropsPos.removeIndex(i); 
-	    	  rainDropsType.removeIndex(i);
-	      }
-	      if(raindrop.overlaps(tarro.getArea())) { //la gota choca con el tarro
-	    	if(rainDropsType.get(i)==1) { // gota dañina
-	    	  tarro.dañar();
-	    	  
-	    	  rainDropsPos.removeIndex(i);
-	          rainDropsType.removeIndex(i);
-	      	}else { // gota a recolectar
-	    	  tarro.sumarPuntos(10);
-	          dropSound.play();
-	          rainDropsPos.removeIndex(i);
-	          rainDropsType.removeIndex(i);
-	      	}
-	      }
-	   }   
-   }
-   
-   public void actualizarDibujoLluvia(SpriteBatch batch) { 
-	   
-	  for (int i=0; i < rainDropsPos.size; i++ ) {
-		  Rectangle raindrop = rainDropsPos.get(i);
-		  if(rainDropsType.get(i)==1) // gota dañina
-	         batch.draw(gotaMala, raindrop.x, raindrop.y); 
-		  else
-			 batch.draw(gotaBuena, raindrop.x, raindrop.y); 
-	   }
-   }
-   public void destruir() {
-	      dropSound.dispose();
-	      rainMusic.dispose();
-   }
-   
+    private long lastSpawnTime = 0L;
+    private float speed = 200f;
+    private int puntos = 0;
+    private int errores = 0;
+
+    public void crear() {
+    	blueDropTex = new Texture(Gdx.files.internal("bucket.png"));
+    	redDropTex  = new Texture(Gdx.files.internal("bucket.png"));
+
+        dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
+        rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+        rainMusic.setLooping(true);
+        rainMusic.play();
+
+        spawnDrop();
+    }
+
+    private void spawnDrop() {
+        Rectangle rect = new Rectangle();
+        rect.x = MathUtils.random(0, 800 - 64);
+        rect.y = 480;
+        rect.width = 64;
+        rect.height = 64;
+        drops.add(rect);
+        dropType.add(MathUtils.randomBoolean(0.75f) ? 0 : 1); // mayoría azules
+        lastSpawnTime = TimeUtils.millis();
+    }
+
+    public void update(float dt) {
+        if (TimeUtils.timeSinceMillis(lastSpawnTime) > 500) spawnDrop();
+
+        for (int i = drops.size - 1; i >= 0; i--) {
+            Rectangle r = drops.get(i);
+            r.y -= speed * dt;
+            if (r.y + r.height < 0) {
+                drops.removeIndex(i);
+                dropType.removeIndex(i);
+            }
+        }
+    }
+
+    public void render(SpriteBatch batch) {
+        for (int i = 0; i < drops.size; i++) {
+            Texture t = dropType.get(i) == 0 ? blueDropTex : redDropTex;
+            Rectangle r = drops.get(i);
+            batch.draw(t, r.x, r.y, r.width, r.height);
+        }
+    }
+
+    public void chequearColision(Auto auto) {
+        for (int i = drops.size - 1; i >= 0; i--) {
+            if (auto.getBounds().overlaps(drops.get(i))) {
+                if (dropType.get(i) == 0) {
+                    puntos += 10;
+                } else {
+                    errores += 1;
+                }
+                dropSound.play();
+                drops.removeIndex(i);
+                dropType.removeIndex(i);
+            }
+        }
+    }
+
+    public int getPuntos() { return puntos; }
+    public int getErrores() { return errores; }
+
+    public void destruir() {
+        if (blueDropTex != null) blueDropTex.dispose();
+        if (redDropTex != null) redDropTex.dispose();
+        if (dropSound != null) dropSound.dispose();
+        if (rainMusic != null) rainMusic.dispose();
+    }
 }
