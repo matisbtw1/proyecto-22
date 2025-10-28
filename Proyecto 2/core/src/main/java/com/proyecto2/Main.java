@@ -1,6 +1,6 @@
 package com.proyecto2;
 
-//Probando Github
+//Probando Github Francisuwu
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
