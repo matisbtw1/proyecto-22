@@ -27,11 +27,15 @@ public class Main extends ApplicationAdapter {
     private boolean juegoIniciado = false;
     private boolean gameOver = false;
 
-    // (Antes: constantes fijas de tamaño del jugador; ahora calculamos por carril)
-    // private static final float PLAYER_W = 95f;
-    // private static final float PLAYER_H = 170f;
+    // Tamaño del jugador (consistente con enemigos)
+    private static final float PLAYER_W = 90f;
+    private static final float PLAYER_H = 160f;
+    
+ // ancho del vehículo como % del ancho de carril
+    private static final float AUTO_SCALE = 0.7f; // auto más ancho
+    private static final float MOTO_SCALE = 0.52f; // moto más angosta
 
-    // Multiplicador de velocidad para mover al jugador (afectado por turbo)
+
     private float playerSpeedMul = 1f;
 
     @Override
@@ -43,13 +47,9 @@ public class Main extends ApplicationAdapter {
         font.setColor(Color.WHITE);
         shape = new ShapeRenderer();
 
-        road   = new Road(); // fondo "carretera.png"
+        road    = new Road(); // carretera.png
         autoTex = new Texture(Gdx.files.internal("player_lambo.png"));
         motoTex = new Texture(Gdx.files.internal("MotoRoja.png"));
-
-        // Suavizado de texturas del jugador (evita dientes al escalar)
-        autoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        motoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         lluvia = new Lluvia();
         lluvia.crear();
@@ -65,7 +65,6 @@ public class Main extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         shape.setProjectionMatrix(camera.combined);
 
-        // --- UPDATE ---
         if (juegoIniciado && !gameOver) {
             playerSpeedMul = lluvia.isTurboActivo() ? lluvia.getBonusVelocidad() : 1f;
             vehiculo.update(dt * playerSpeedMul);
@@ -74,12 +73,13 @@ public class Main extends ApplicationAdapter {
             if (lluvia.getErrores() >= 3) gameOver = true;
         }
 
-        // --- RENDER FONDO ---
+        // Fondo
         batch.begin();
         road.render(batch);
         batch.end();
 
-        // --- MENÚ DE SELECCIÓN ---
+        // Selección
+     // Selección
         if (!juegoIniciado) {
             batch.begin();
             font.draw(batch, "Selecciona tu vehiculo:", 300, 300);
@@ -87,47 +87,51 @@ public class Main extends ApplicationAdapter {
             font.draw(batch, "Presiona 2 para MOTO", 320, 240);
             batch.end();
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
-                // AUTO: ~70% del ancho del carril
-            	float laneW   = Lluvia.laneWidth();
-            	float w       = laneW * 0.70f;
-            	float aspect  = autoTex.getHeight() / (float) autoTex.getWidth();
-            	final float AUTO_H_FACTOR = 0.85f;              // <- acorta 15% la altura
-            	float h       = w * aspect * AUTO_H_FACTOR;
-                float centerX = (Lluvia.ROAD_LEFT + Lluvia.ROAD_RIGHT) / 2f;
+            // centro del asfalto
+            float centerX = (Lluvia.roadMinX() + Lluvia.roadMaxX()) / 2f;
+            // ancho de carril para escalar vehículos
+            float laneW = Lluvia.laneWidth();
 
+            if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
+                // ===== AUTO =====
+                float w = laneW * AUTO_SCALE;
+                // mantén proporción del sprite del auto
+                float aspect = autoTex.getHeight() / (float) autoTex.getWidth();
+                float h = w * aspect;
+
+                float startX = centerX - w / 2f;
                 vehiculo = new Auto(
                         autoTex,
-                        centerX - w / 2f,
+                        startX,
                         20f,
                         w, h,
-                        Lluvia.ROAD_LEFT, Lluvia.ROAD_RIGHT
+                        Lluvia.roadMinX(),
+                        Lluvia.roadMaxX()
                 );
                 juegoIniciado = true;
                 gameOver = false;
 
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_2)) {
-                // MOTO: ~55% del ancho del carril
-            	float laneW   = Lluvia.laneWidth();
-            	float w       = laneW * 0.55f;
-            	float aspect  = motoTex.getHeight() / (float) motoTex.getWidth();
-            	final float MOTO_H_FACTOR = 0.90f;              // <- acorta 10% la altura
-            	float h       = w * aspect * MOTO_H_FACTOR;
-                float centerX = (Lluvia.ROAD_LEFT + Lluvia.ROAD_RIGHT) / 2f;
+                // ===== MOTO (más pequeña) =====
+                float w = laneW * MOTO_SCALE; // <- más chica que el auto
+                float aspect = motoTex.getHeight() / (float) motoTex.getWidth();
+                float h = w * aspect;
 
+                float startX = centerX - w / 2f;
                 vehiculo = new Moto(
                         motoTex,
-                        centerX - w / 2f,
+                        startX,
                         100f,
                         w, h
                 );
                 juegoIniciado = true;
                 gameOver = false;
             }
-            return; // no sigas dibujando HUD/halos si aún no inicia
+            return;
         }
 
-        // --- GAME OVER ---
+
+        // Game Over
         if (gameOver) {
             batch.begin();
             font.draw(batch, "GAME OVER", 360, 270);
@@ -137,63 +141,47 @@ public class Main extends ApplicationAdapter {
             return;
         }
 
-        // --- JUEGO EN CURSO: OBJETOS + JUGADOR ---
+        // Juego
         batch.begin();
         lluvia.render(batch);
         vehiculo.render(batch);
         batch.end();
 
-        // --- HALOS DE ESTADO ---
-        float cx = vehiculo.getBounds().x + vehiculo.getBounds().width / 2f;
+        // Halos de estado
+        float cx = vehiculo.getBounds().x + vehiculo.getBounds().width  / 2f;
         float cy = vehiculo.getBounds().y + vehiculo.getBounds().height / 2f;
-        float r = Math.max(vehiculo.getBounds().width, vehiculo.getBounds().height) * 0.58f;
-
+        float r  = Math.max(vehiculo.getBounds().width, vehiculo.getBounds().height) * 0.65f;
 
         if (lluvia.isEscudoActivo() || lluvia.isTurboActivo() || lluvia.justPickedVida()) {
             Gdx.gl.glEnable(GL20.GL_BLEND);
-
             // Relleno
             shape.begin(ShapeRenderer.ShapeType.Filled);
-            if (lluvia.isEscudoActivo() && !lluvia.isTurboActivo() && !lluvia.justPickedVida()) {
-                shape.setColor(0f, 0.8f, 1f, 0.25f);      // azul
-            } else if (lluvia.isTurboActivo() && !lluvia.isEscudoActivo() && !lluvia.justPickedVida()) {
-                shape.setColor(1f, 0.3f, 0f, 0.25f);      // naranja
-            } else if (lluvia.justPickedVida() && !lluvia.isEscudoActivo() && !lluvia.isTurboActivo()) {
-                shape.setColor(0f, 1f, 0f, 0.25f);        // verde
-            } else {
-                shape.setColor(0.7f, 0.5f, 1f, 0.25f);    // mezcla si coinciden
-            }
+            if (lluvia.isEscudoActivo() && !lluvia.isTurboActivo() && !lluvia.justPickedVida())      shape.setColor(0f, 0.8f, 1f, 0.25f);
+            else if (lluvia.isTurboActivo() && !lluvia.isEscudoActivo() && !lluvia.justPickedVida()) shape.setColor(1f, 0.3f, 0f, 0.25f);
+            else if (lluvia.justPickedVida() && !lluvia.isEscudoActivo() && !lluvia.isTurboActivo()) shape.setColor(0f, 1f, 0f, 0.25f);
+            else shape.setColor(0.7f, 0.5f, 1f, 0.25f);
             shape.circle(cx, cy, r);
             shape.end();
 
             // Contorno
             shape.begin(ShapeRenderer.ShapeType.Line);
-            if (lluvia.isEscudoActivo() && !lluvia.isTurboActivo() && !lluvia.justPickedVida()) {
-                shape.setColor(0f, 0.9f, 1f, 0.9f);
-            } else if (lluvia.isTurboActivo() && !lluvia.isEscudoActivo() && !lluvia.justPickedVida()) {
-                shape.setColor(1f, 0.4f, 0f, 0.9f);
-            } else if (lluvia.justPickedVida() && !lluvia.isEscudoActivo() && !lluvia.isTurboActivo()) {
-                shape.setColor(0f, 1f, 0f, 0.8f);
-            } else {
-                shape.setColor(0.8f, 0.6f, 1f, 0.9f);
-            }
+            if (lluvia.isEscudoActivo() && !lluvia.isTurboActivo() && !lluvia.justPickedVida())      shape.setColor(0f, 0.9f, 1f, 0.9f);
+            else if (lluvia.isTurboActivo() && !lluvia.isEscudoActivo() && !lluvia.justPickedVida()) shape.setColor(1f, 0.4f, 0f, 0.9f);
+            else if (lluvia.justPickedVida() && !lluvia.isEscudoActivo() && !lluvia.isTurboActivo()) shape.setColor(0f, 1f, 0f, 0.8f);
+            else shape.setColor(0.8f, 0.6f, 1f, 0.9f);
             shape.circle(cx, cy, r);
             shape.end();
-
             Gdx.gl.glDisable(GL20.GL_BLEND);
         }
 
-        // --- HUD ---
+        // HUD
         batch.begin();
         if (lluvia.isEscudoActivo()) {
-            font.setColor(Color.CYAN);
-            font.draw(batch, "ESCUDO ACTIVO!", 340, 470);
+            font.setColor(Color.CYAN);    font.draw(batch, "ESCUDO ACTIVO!", 340, 470);
         } else if (lluvia.isTurboActivo()) {
-            font.setColor(Color.ORANGE);
-            font.draw(batch, "TURBO ACTIVADO!", 330, 470);
+            font.setColor(Color.ORANGE);  font.draw(batch, "TURBO ACTIVADO!", 330, 470);
         } else if (lluvia.justPickedVida()) {
-            font.setColor(Color.GREEN);
-            font.draw(batch, "REPARADO!", 360, 470);
+            font.setColor(Color.GREEN);   font.draw(batch, "REPARADO!", 360, 470);
         }
         font.setColor(Color.WHITE);
         font.draw(batch, "Puntos: "  + lluvia.getPuntos(), 10, 470);

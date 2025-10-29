@@ -6,13 +6,14 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 
 public class Moto extends Vehiculo {
-    private float velocidad = 320f;
+    private float velocidad = 120f;
     private float inerciaX = 0f, inerciaY = 0f;
-    private float factorDerrape = 0.90f;
+    private float factorDerrape = 0.96f;
 
     // límites horizontales: usa los mismos del asfalto
     private final float roadMinX = Lluvia.ROAD_LEFT;
     private final float roadMaxX = Lluvia.ROAD_RIGHT;
+   
 
     // hitbox temporal (evita crear objetos cada frame)
     private final Rectangle hb = new Rectangle();
