@@ -1,5 +1,6 @@
 AutoMalo.png
 bucket.png
+carretera.png
 drop.png
 drop.wav
 dropBad.png
@@ -10,3 +11,6 @@ player_lambo.png
 police_explorer.png
 rain.mp3
 road_6lanes.png
+shield.png
+turbo.png
+vida.png

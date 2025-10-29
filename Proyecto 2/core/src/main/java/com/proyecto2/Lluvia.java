@@ -42,9 +42,14 @@ public class Lluvia {
     public static final float ROAD_LEFT  = 180f;         // borde izquierdo asfalto
     public static final float ROAD_RIGHT = 800f - 180f;  // borde derecho asfalto
 
-    // Tamaños de sprite
-    private static final float OBJ_W = 90f;
-    private static final float OBJ_H = 160f;
+    // === Escala por carril ===
+    // Enemigos ~65% del ancho del carril; ítems ~45%. Ajusta a gusto.
+    private static final float ENEMY_W_FACTOR = 0.65f;
+    private static final float ITEM_W_FACTOR  = 0.45f;
+    
+    private static final float ENEMY_H_FACTOR = 0.88f; // acorta 12% la altura
+    private static final float ITEM_H_FACTOR  = 0.95f; // casi sin cambio en ítems
+
 
     private int lastLane = -1;
 
@@ -69,11 +74,25 @@ public class Lluvia {
     private float probTurbo  = 0.07f;  // 7%
     private float probVida   = 0.07f;  // 7%
 
+    // === Helpers de carril (para reusar desde cualquier lado) ===
+    public static float laneWidth() {
+        return (ROAD_RIGHT - ROAD_LEFT) / (float) LANES;
+    }
+    public static float laneCenterX(int lane) {
+        return ROAD_LEFT + laneWidth() * (lane + 0.5f);
+    }
+
     public void crear() {
         texEnemigo = new Texture(Gdx.files.internal("police_explorer.png"));
         texEscudo  = new Texture(Gdx.files.internal("shield.png"));
         texTurbo   = new Texture(Gdx.files.internal("turbo.png"));
         texVida    = new Texture(Gdx.files.internal("vida.png"));
+
+        // Suavizado al escalar (evita dientes de sierra)
+        texEnemigo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texEscudo .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texTurbo  .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texVida   .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         dropSound  = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         rainMusic  = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
@@ -83,22 +102,12 @@ public class Lluvia {
         spawnObjeto();
     }
 
+    // Tamaño manteniendo proporción (alto/ancho de la textura)
+    private static float alturaPorAncho(Texture t, float targetW) {
+        return targetW * (t.getHeight() / (float) t.getWidth());
+    }
+
     private void spawnObjeto() {
-        Rectangle r = new Rectangle();
-        r.y = 480;
-        r.width  = OBJ_W;
-        r.height = OBJ_H;
-
-        // Carril aleatorio (evita repetir el mismo)
-        float laneWidth = (ROAD_RIGHT - ROAD_LEFT) / (float) LANES;
-        int lane;
-        do { lane = MathUtils.random(0, LANES - 1); }
-        while (LANES > 1 && lane == lastLane);
-        lastLane = lane;
-
-        float laneCenterX = ROAD_LEFT + laneWidth * (lane + 0.5f);
-        r.x = laneCenterX - OBJ_W / 2f;
-
         // Decide el tipo según probabilidades
         float rand = MathUtils.random();
         int tipo;
@@ -111,6 +120,34 @@ public class Lluvia {
         } else {
             tipo = ENEMIGO;
         }
+
+        // Carril aleatorio (evita repetir el mismo)
+        int lane;
+        do { lane = MathUtils.random(0, LANES - 1); }
+        while (LANES > 1 && lane == lastLane);
+        lastLane = lane;
+
+        // Ancho objetivo por carril + textura correspondiente
+        float lw = laneWidth();
+        Texture tex;
+        float targetW;
+        if (tipo == ENEMIGO) {
+            tex = texEnemigo;
+            targetW = lw * ENEMY_W_FACTOR;
+        } else {
+            // Todos los bonus usan factor más pequeño
+            tex = (tipo == BONUS_ESCUDO) ? texEscudo : (tipo == BONUS_TURBO ? texTurbo : texVida);
+            targetW = lw * ITEM_W_FACTOR;
+        }
+        float baseH = alturaPorAncho(tex, targetW);
+        float targetH = baseH * (tipo == ENEMIGO ? ENEMY_H_FACTOR : ITEM_H_FACTOR);
+
+        // Rectangle final
+        Rectangle r = new Rectangle();
+        r.width  = targetW;
+        r.height = targetH;
+        r.y = 480; // salir desde arriba (ajusta si tu mundo cambia)
+        r.x = laneCenterX(lane) - r.width / 2f;
 
         objetos.add(r);
         tipos.add(tipo);
@@ -170,9 +207,13 @@ public class Lluvia {
     }
 
     public void chequearColision(Vehiculo vehiculo) {
+        // Hitbox "amigable" del jugador (80% del sprite). Ajusta si quieres más/menos estricto.
+        final float HBX = 0.8f, HBY = 0.8f;
+        Rectangle playerRect = vehiculo.getHitbox(HBX, HBY);
+
         for (int i = objetos.size - 1; i >= 0; i--) {
             Rectangle r = objetos.get(i);
-            if (vehiculo.getBounds().overlaps(r)) {
+            if (playerRect.overlaps(r)) {
                 int tipo = tipos.get(i);
 
                 if (tipo == ENEMIGO) {

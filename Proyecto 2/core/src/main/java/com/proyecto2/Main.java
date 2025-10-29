@@ -27,9 +27,9 @@ public class Main extends ApplicationAdapter {
     private boolean juegoIniciado = false;
     private boolean gameOver = false;
 
-    // Tamaño del jugador
-    private static final float PLAYER_W = 95f;
-    private static final float PLAYER_H = 170f;
+    // (Antes: constantes fijas de tamaño del jugador; ahora calculamos por carril)
+    // private static final float PLAYER_W = 95f;
+    // private static final float PLAYER_H = 170f;
 
     // Multiplicador de velocidad para mover al jugador (afectado por turbo)
     private float playerSpeedMul = 1f;
@@ -46,6 +46,10 @@ public class Main extends ApplicationAdapter {
         road   = new Road(); // fondo "carretera.png"
         autoTex = new Texture(Gdx.files.internal("player_lambo.png"));
         motoTex = new Texture(Gdx.files.internal("MotoRoja.png"));
+
+        // Suavizado de texturas del jugador (evita dientes al escalar)
+        autoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        motoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         lluvia = new Lluvia();
         lluvia.crear();
@@ -84,18 +88,39 @@ public class Main extends ApplicationAdapter {
             batch.end();
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
+                // AUTO: ~70% del ancho del carril
+            	float laneW   = Lluvia.laneWidth();
+            	float w       = laneW * 0.70f;
+            	float aspect  = autoTex.getHeight() / (float) autoTex.getWidth();
+            	final float AUTO_H_FACTOR = 0.85f;              // <- acorta 15% la altura
+            	float h       = w * aspect * AUTO_H_FACTOR;
+                float centerX = (Lluvia.ROAD_LEFT + Lluvia.ROAD_RIGHT) / 2f;
+
                 vehiculo = new Auto(
                         autoTex,
-                        (Lluvia.ROAD_LEFT + Lluvia.ROAD_RIGHT)/2f - PLAYER_W/2f,
-                        20, PLAYER_W, PLAYER_H,
-                        Lluvia.ROAD_LEFT, Lluvia.ROAD_RIGHT);
+                        centerX - w / 2f,
+                        20f,
+                        w, h,
+                        Lluvia.ROAD_LEFT, Lluvia.ROAD_RIGHT
+                );
                 juegoIniciado = true;
                 gameOver = false;
+
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_2)) {
+                // MOTO: ~55% del ancho del carril
+            	float laneW   = Lluvia.laneWidth();
+            	float w       = laneW * 0.55f;
+            	float aspect  = motoTex.getHeight() / (float) motoTex.getWidth();
+            	final float MOTO_H_FACTOR = 0.90f;              // <- acorta 10% la altura
+            	float h       = w * aspect * MOTO_H_FACTOR;
+                float centerX = (Lluvia.ROAD_LEFT + Lluvia.ROAD_RIGHT) / 2f;
+
                 vehiculo = new Moto(
                         motoTex,
-                        (Lluvia.ROAD_LEFT + Lluvia.ROAD_RIGHT)/2f - PLAYER_W/2f,
-                        100, PLAYER_W, PLAYER_H);
+                        centerX - w / 2f,
+                        100f,
+                        w, h
+                );
                 juegoIniciado = true;
                 gameOver = false;
             }
@@ -121,7 +146,8 @@ public class Main extends ApplicationAdapter {
         // --- HALOS DE ESTADO ---
         float cx = vehiculo.getBounds().x + vehiculo.getBounds().width / 2f;
         float cy = vehiculo.getBounds().y + vehiculo.getBounds().height / 2f;
-        float r  = Math.max(vehiculo.getBounds().width, vehiculo.getBounds().height) * 0.65f;
+        float r = Math.max(vehiculo.getBounds().width, vehiculo.getBounds().height) * 0.58f;
+
 
         if (lluvia.isEscudoActivo() || lluvia.isTurboActivo() || lluvia.justPickedVida()) {
             Gdx.gl.glEnable(GL20.GL_BLEND);

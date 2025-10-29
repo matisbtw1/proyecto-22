@@ -8,12 +8,23 @@ public class Road {
     private final Texture tex;
 
     public Road() {
-        tex = new Texture(Gdx.files.internal("carretera.png")); // fondo nuevo
+        tex = new Texture(Gdx.files.internal("carretera.png")); // fondo
+        tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     public void render(SpriteBatch batch) {
-        // Dibuja el fondo escalado a toda la pantalla
+        // Fondo completo
         batch.draw(tex, 0, 0, 800, 480);
+    }
+
+    /**
+     * Si prefieres que el asfalto encaje con los límites ROAD_LEFT/RIGHT,
+     * usa este método en lugar de render().
+     */
+    public void renderAlineado(SpriteBatch batch) {
+        float roadWidth = Lluvia.ROAD_RIGHT - Lluvia.ROAD_LEFT;
+        // Dibuja solo el asfalto centrado con márgenes reales
+        batch.draw(tex, Lluvia.ROAD_LEFT, 0, roadWidth, 480);
     }
 
     public void dispose() {
