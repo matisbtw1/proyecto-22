@@ -42,9 +42,12 @@ public class Lluvia {
     public static final float ROAD_LEFT  = 180f;         // borde izq. asfalto
     public static final float ROAD_RIGHT = 800f - 180f;  // borde der. asfalto
 
-    // Tamaños de lo que cae (render y lógica usan lo mismo)
-    private static final float OBJ_W = 110f;
-    private static final float OBJ_H = 130f;
+ // Escala por carril (ancho) + “achate” (alto)
+    private static final float ENEMY_W_FACTOR = 0.65f;
+    private static final float ITEM_W_FACTOR  = 0.45f;
+    private static final float ENEMY_H_FACTOR = 0.88f;
+    private static final float ITEM_H_FACTOR  = 0.95f;
+
 
     // Afinar colisión (reduce rect por cada lado)
     private static final float COLLISION_SHRINK = 0.12f; // 12% del ancho/alto
@@ -89,6 +92,11 @@ public class Lluvia {
         texEscudo  = new Texture(Gdx.files.internal("shield.png"));
         texTurbo   = new Texture(Gdx.files.internal("turbo.png"));
         texVida    = new Texture(Gdx.files.internal("vida.png"));
+        
+        texEnemigo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texEscudo .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texTurbo  .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texVida   .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         dropSound  = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         rainMusic  = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
@@ -99,18 +107,6 @@ public class Lluvia {
     }
 
     private void spawnObjeto() {
-        Rectangle r = new Rectangle();
-        r.y = 480;
-        r.width  = OBJ_W;
-        r.height = OBJ_H;
-
-        int lane;
-        do { lane = MathUtils.random(0, LANES - 1); } while (LANES > 1 && lane == lastLane);
-        lastLane = lane;
-
-        float xCenter = laneCenterX(lane);
-        r.x = xCenter - OBJ_W / 2f;
-
         // decide tipo
         float rand = MathUtils.random();
         int tipo;
@@ -119,10 +115,36 @@ public class Lluvia {
         else if (rand < probEscudo + probTurbo + probVida) tipo = BONUS_VIDA;
         else tipo = ENEMIGO;
 
+        // carril aleatorio (evita repetir)
+        int lane;
+        do { lane = MathUtils.random(0, LANES - 1); } while (LANES > 1 && lane == lastLane);
+        lastLane = lane;
+
+        // ancho objetivo por carril
+        float lw      = laneWidth();
+        float targetW = (tipo == ENEMIGO) ? lw * ENEMY_W_FACTOR : lw * ITEM_W_FACTOR;
+
+        // textura según tipo
+        Texture tex = (tipo == ENEMIGO) ? texEnemigo :
+                      (tipo == BONUS_ESCUDO) ? texEscudo :
+                      (tipo == BONUS_TURBO)  ? texTurbo  : texVida;
+
+        // alto manteniendo proporción + “achate”
+        float baseH   = targetW * (tex.getHeight() / (float) tex.getWidth());
+        float targetH = baseH * ((tipo == ENEMIGO) ? ENEMY_H_FACTOR : ITEM_H_FACTOR);
+
+        // rectangle final
+        Rectangle r = new Rectangle();
+        r.width  = targetW;
+        r.height = targetH;
+        r.y = 480;
+        r.x = laneCenterX(lane) - r.width / 2f;
+
         objetos.add(r);
         tipos.add(tipo);
         lastSpawnTime = TimeUtils.millis();
     }
+
 
     public void update(float dt) {
         if (TimeUtils.timeSinceMillis(lastSpawnTime) > spawnIntervalMs) spawnObjeto();
@@ -161,19 +183,10 @@ public class Lluvia {
                 case BONUS_VIDA:   t = texVida;   break;
                 default:           t = texEnemigo; break;
             }
-            float drawW = r.width;
-            float drawH = r.height;
-
-            // Reducir tamaño solo para bonus
-            if (tipo == BONUS_ESCUDO || tipo == BONUS_TURBO || tipo == BONUS_VIDA) {
-                drawW *= 0.85f;  // 75% del tamaño original
-                drawH *= 0.f;
-            }
-
-            batch.draw(t, r.x + (r.width - drawW) / 2f, r.y, drawW, drawH);
-
+            batch.draw(t, r.x, r.y, r.width, r.height);
         }
     }
+
 
     public void chequearColision(Vehiculo vehiculo) {
         // Construye hitbox “reducida” del jugador

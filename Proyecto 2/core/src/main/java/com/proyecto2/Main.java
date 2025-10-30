@@ -50,6 +50,9 @@ public class Main extends ApplicationAdapter {
         road    = new Road(); // carretera.png
         autoTex = new Texture(Gdx.files.internal("player_lambo.png"));
         motoTex = new Texture(Gdx.files.internal("MotoRoja.png"));
+        
+        autoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        motoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         lluvia = new Lluvia();
         lluvia.crear();
@@ -94,10 +97,10 @@ public class Main extends ApplicationAdapter {
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
                 // ===== AUTO =====
-                float w = laneW * AUTO_SCALE;
-                // mantén proporción del sprite del auto
-                float aspect = autoTex.getHeight() / (float) autoTex.getWidth();
-                float h = w * aspect;
+            	float w      = laneW * AUTO_SCALE;    // 0.7f
+            	float aspect = autoTex.getHeight() / (float) autoTex.getWidth();
+            	float h      = w * aspect * 0.85f;    // acorta 15%
+
 
                 float startX = centerX - w / 2f;
                 vehiculo = new Auto(
@@ -113,9 +116,9 @@ public class Main extends ApplicationAdapter {
 
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_2)) {
                 // ===== MOTO (más pequeña) =====
-                float w = laneW * MOTO_SCALE; // <- más chica que el auto
-                float aspect = motoTex.getHeight() / (float) motoTex.getWidth();
-                float h = w * aspect;
+            	float w      = laneW * MOTO_SCALE;    // 0.52f
+            	float aspect = motoTex.getHeight() / (float) motoTex.getWidth();
+            	float h      = w * aspect * 0.90f;    // acorta 10%
 
                 float startX = centerX - w / 2f;
                 vehiculo = new Moto(
