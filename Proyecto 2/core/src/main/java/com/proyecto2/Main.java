@@ -88,22 +88,22 @@ public class Main extends ApplicationAdapter {
             float centerX = (Lluvia.roadMinX() + Lluvia.roadMaxX()) / 2f;
             float laneW = Lluvia.laneWidth();
 
-            // Parámetros de escala "realistas"
-            final float AUTO_W_FRAC  = 0.58f;   // ancho del auto ~58% del carril
-            final float MOTO_W_FRAC  = 0.46f;   // 15% más grande, sigue más angosta que el auto
-            final float AUTO_FLAT    = 0.80f;   // “achate” 20% el alto final del auto
-            final float MOTO_FLAT    = 0.90f;   // moto apenas “achatada”
-            final float MAX_AR_AUTO  = 1.85f;   // tope AR para auto (alto/ancho)
-            final float MAX_AR_MOTO  = 1.60f;   // tope AR para moto
+            // Parámetros de escala
+            final float AUTO_W_FRAC  = 0.58f;   
+            final float MOTO_W_FRAC  = 0.46f;   
+            final float AUTO_FLAT    = 0.80f;   
+            final float MOTO_FLAT    = 0.90f;   
+            final float MAX_AR_AUTO  = 1.85f;   
+            final float MAX_AR_MOTO  = 1.60f;   
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
                 // ===== AUTO =====
                 float w = laneW * AUTO_W_FRAC;
-                float texAR = autoTex.getHeight() / (float) autoTex.getWidth(); // alto/ancho original
+                float texAR = autoTex.getHeight() / (float) autoTex.getWidth(); 
                 float usedAR = Math.min(texAR, MAX_AR_AUTO);
                 float h = w * usedAR * AUTO_FLAT;
 
-                float startX = Math.round(centerX - w / 2f);  // snap a píxel
+                float startX = Math.round(centerX - w / 2f);  
                 vehiculo = new Auto(
                         autoTex,
                         startX,

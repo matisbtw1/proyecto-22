@@ -17,10 +17,6 @@ public class Road {
         batch.draw(tex, 0, 0, 800, 480);
     }
 
-    /**
-     * Si prefieres que el asfalto encaje con los límites ROAD_LEFT/RIGHT,
-     * usa este método en lugar de render().
-     */
     public void renderAlineado(SpriteBatch batch) {
         float roadWidth = Lluvia.ROAD_RIGHT - Lluvia.ROAD_LEFT;
         // Dibuja solo el asfalto centrado con márgenes reales

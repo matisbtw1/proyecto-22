@@ -9,12 +9,12 @@ public abstract class Vehiculo {
     protected Rectangle bounds;
     protected boolean visible = true;
 
-    // Rectángulo temporal para hitbox (evita crear garbage cada frame)
+    // Rectángulo temporal para hitbox 
     private final Rectangle tmpHitbox = new Rectangle();
 
     public Vehiculo(Texture texture, float x, float y, float width, float height) {
         this.texture = texture;
-        // Suavizado al escalar (no rompe si la textura se comparte)
+        // Suavizado al escalar
         this.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         this.bounds = new Rectangle(x, y, width, height);
     }
@@ -56,7 +56,7 @@ public abstract class Vehiculo {
     /** Relación de aspecto del sprite (alto/ancho) */
     public float getAspect() { return texture.getHeight() / (float) texture.getWidth(); }
 
-    /** Hitbox reducida (sx/sy en [0..1], p.ej. 0.8f = 80% del sprite) */
+    /** Hitbox reducida  */
     public Rectangle getHitbox(float sx, float sy) {
         float w = bounds.width * sx;
         float h = bounds.height * sy;
@@ -71,7 +71,5 @@ public abstract class Vehiculo {
     public Texture getTexture() { return texture; }
 
     public void dispose() {
-        // Si gestionas texturas con AssetManager, NO las disposes aquí.
-        // Déjalo vacío o controla con un flag si esta instancia es dueña de la textura.
     }
 }

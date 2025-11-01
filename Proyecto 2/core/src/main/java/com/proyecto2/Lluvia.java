@@ -33,18 +33,17 @@ public class Lluvia {
     private float puntosFrac = 0f;
     private float puntosPorSegundo = 10f;
 
-    // === Escala corregida (igual que antes) ===
+    // === Escala ===
     public static final int LANES = 4;
     public static final float ROAD_LEFT  = 140f;
     public static final float ROAD_RIGHT = 800f - 140f;
     
-    private static final float ENEMY_W_FACTOR = 0.58f;   // ~58% del carril
-    private static final float ITEM_W_FACTOR  = 0.42f;   // ítems un poco más chicos
+    private static final float ENEMY_W_FACTOR = 0.58f;   
+    private static final float ITEM_W_FACTOR  = 0.42f;   
 
-    private static final float ENEMY_H_FACTOR = 0.82f;   // “achate” enemigo ~18%
-    private static final float ITEM_H_FACTOR  = 0.92f;   // ítems casi sin cambio
+    private static final float ENEMY_H_FACTOR = 0.82f;   
+    private static final float ITEM_H_FACTOR  = 0.92f;   
 
-    // Topes de aspect ratio (alto/ancho) para evitar “limusina”
     private static final float MAX_AR_ENEMY = 1.75f;
     private static final float MAX_AR_ITEM  = 1.35f;
 
@@ -128,7 +127,7 @@ public class Lluvia {
         else if (rand < probEscudo + probTurbo + probVida + probMalusInvert) tipo = MALUS_INVERT;
         else tipo = ENEMIGO;
 
-        // 2) carril aleatorio (evita repetir)
+        // 2) carril aleatorio 
         int lane;
         do { lane = MathUtils.random(0, LANES - 1); } while (LANES > 1 && lane == lastLane);
         lastLane = lane;
@@ -148,7 +147,7 @@ public class Lluvia {
         float maxAR = esEnemigoOMalus ? MAX_AR_ENEMY : MAX_AR_ITEM;
         float usedAR = Math.min(texAR, maxAR);
 
-        // 5) alto manteniendo proporción con tope + “achate”
+        // 5) alto manteniendo proporción con tope
         float flat = esEnemigoOMalus ? ENEMY_H_FACTOR : ITEM_H_FACTOR;
         float targetH = targetW * usedAR * flat;
 
@@ -157,7 +156,7 @@ public class Lluvia {
         r.width  = targetW;
         r.height = targetH;
         r.y = 480;
-        r.x = Math.round(laneCenterX(lane) - r.width / 2f);  // snap a píxel
+        r.x = Math.round(laneCenterX(lane) - r.width / 2f);  
 
         // 7) agrega
         objetos.add(r);
@@ -204,7 +203,6 @@ public class Lluvia {
                 case MALUS_INVERT:  t = texCono;   break;
                 default:            t = texEnemigo; break;
             }
-            // Dibuja una sola vez, usando el rect escalado
             batch.draw(t, r.x, r.y, r.width, r.height);
         }
     }
