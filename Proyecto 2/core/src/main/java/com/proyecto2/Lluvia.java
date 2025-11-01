@@ -37,8 +37,17 @@ public class Lluvia {
     public static final int LANES = 4;
     public static final float ROAD_LEFT  = 140f;
     public static final float ROAD_RIGHT = 800f - 140f;
-    private static final float OBJ_W = 85f;
-    private static final float OBJ_H = 95f;
+    
+    private static final float ENEMY_W_FACTOR = 0.58f;   // ~58% del carril
+    private static final float ITEM_W_FACTOR  = 0.42f;   // ítems un poco más chicos
+
+    private static final float ENEMY_H_FACTOR = 0.82f;   // “achate” enemigo ~18%
+    private static final float ITEM_H_FACTOR  = 0.92f;   // ítems casi sin cambio
+
+    // Topes de aspect ratio (alto/ancho) para evitar “limusina”
+    private static final float MAX_AR_ENEMY = 1.75f;
+    private static final float MAX_AR_ITEM  = 1.35f;
+
 
     private static final float COLLISION_SHRINK = 0.12f;
     private int lastLane = -1;
@@ -93,6 +102,12 @@ public class Lluvia {
         texTurbo   = new Texture(Gdx.files.internal("turbo.png"));
         texVida    = new Texture(Gdx.files.internal("vida.png"));
         texCono    = new Texture(Gdx.files.internal("cono.png"));
+        
+        texEnemigo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texEscudo .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texTurbo  .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texVida   .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texCono   .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
@@ -104,18 +119,7 @@ public class Lluvia {
     }
 
     private void spawnObjeto() {
-        Rectangle r = new Rectangle();
-        r.y = 480;
-        r.width = OBJ_W;
-        r.height = OBJ_H;
-
-        int lane;
-        do { lane = MathUtils.random(0, LANES - 1); } while (LANES > 1 && lane == lastLane);
-        lastLane = lane;
-
-        float xCenter = laneCenterX(lane);
-        r.x = xCenter - OBJ_W / 2f;
-
+        // 1) decide tipo
         float rand = MathUtils.random();
         int tipo;
         if (rand < probEscudo) tipo = BONUS_ESCUDO;
@@ -124,10 +128,43 @@ public class Lluvia {
         else if (rand < probEscudo + probTurbo + probVida + probMalusInvert) tipo = MALUS_INVERT;
         else tipo = ENEMIGO;
 
+        // 2) carril aleatorio (evita repetir)
+        int lane;
+        do { lane = MathUtils.random(0, LANES - 1); } while (LANES > 1 && lane == lastLane);
+        lastLane = lane;
+
+        // 3) ancho objetivo por carril
+        float lw      = laneWidth();
+        boolean esEnemigoOMalus = (tipo == ENEMIGO || tipo == MALUS_INVERT);
+        float targetW = esEnemigoOMalus ? (lw * ENEMY_W_FACTOR) : (lw * ITEM_W_FACTOR);
+
+        // 4) textura del objeto y AR original
+        Texture tex = (tipo == ENEMIGO) ? texEnemigo :
+                      (tipo == BONUS_ESCUDO) ? texEscudo :
+                      (tipo == BONUS_TURBO)  ? texTurbo  :
+                      (tipo == BONUS_VIDA)   ? texVida   : texCono;
+
+        float texAR = tex.getHeight() / (float) tex.getWidth(); // alto/ancho
+        float maxAR = esEnemigoOMalus ? MAX_AR_ENEMY : MAX_AR_ITEM;
+        float usedAR = Math.min(texAR, maxAR);
+
+        // 5) alto manteniendo proporción con tope + “achate”
+        float flat = esEnemigoOMalus ? ENEMY_H_FACTOR : ITEM_H_FACTOR;
+        float targetH = targetW * usedAR * flat;
+
+        // 6) rect final
+        Rectangle r = new Rectangle();
+        r.width  = targetW;
+        r.height = targetH;
+        r.y = 480;
+        r.x = Math.round(laneCenterX(lane) - r.width / 2f);  // snap a píxel
+
+        // 7) agrega
         objetos.add(r);
         tipos.add(tipo);
         lastSpawnTime = TimeUtils.millis();
     }
+
 
     public void update(float dt) {
         if (TimeUtils.timeSinceMillis(lastSpawnTime) > spawnIntervalMs) spawnObjeto();
@@ -161,34 +198,17 @@ public class Lluvia {
             int tipo = tipos.get(i);
             Texture t;
             switch (tipo) {
-                case BONUS_ESCUDO:
-                    t = texEscudo;
-                    break;
-                case BONUS_TURBO:
-                    t = texTurbo;
-                    break;
-                case BONUS_VIDA:
-                    t = texVida;
-                    break;
-                case MALUS_INVERT:
-                    t = texCono;
-                    break;
-                default:
-                    t = texEnemigo;
-                    break;
+                case BONUS_ESCUDO:  t = texEscudo; break;
+                case BONUS_TURBO:   t = texTurbo;  break;
+                case BONUS_VIDA:    t = texVida;   break;
+                case MALUS_INVERT:  t = texCono;   break;
+                default:            t = texEnemigo; break;
             }
-
-            float drawW = r.width;
-            float drawH = r.height;
-
-            if (tipo != ENEMIGO) {
-                drawW *= 0.8f;
-                drawH *= 0.8f;
-            }
-
-            batch.draw(t, r.x + (r.width - drawW) / 2f, r.y, drawW, drawH);
+            // Dibuja una sola vez, usando el rect escalado
+            batch.draw(t, r.x, r.y, r.width, r.height);
         }
     }
+
 
     public void chequearColision(Vehiculo vehiculo) {
         shrinkInto(vehiculo.getBounds(), tmpV, COLLISION_SHRINK);

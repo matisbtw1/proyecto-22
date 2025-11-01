@@ -45,6 +45,10 @@ public class Main extends ApplicationAdapter {
         road    = new Road();
         autoTex = new Texture(Gdx.files.internal("player_lambo.png"));
         motoTex = new Texture(Gdx.files.internal("MotoRoja.png"));
+        
+        autoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        motoTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
 
         lluvia = new Lluvia();
         lluvia.crear();
@@ -73,7 +77,7 @@ public class Main extends ApplicationAdapter {
         road.render(batch);
         batch.end();
 
-        // Selección de vehículo
+     // Selección de vehículo
         if (!juegoIniciado) {
             batch.begin();
             font.draw(batch, "Selecciona tu vehiculo:", 300, 300);
@@ -84,28 +88,53 @@ public class Main extends ApplicationAdapter {
             float centerX = (Lluvia.roadMinX() + Lluvia.roadMaxX()) / 2f;
             float laneW = Lluvia.laneWidth();
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
-                float w = laneW * AUTO_SCALE;
-                float aspect = autoTex.getHeight() / (float) autoTex.getWidth();
-                float h = w * aspect;
+            // Parámetros de escala "realistas"
+            final float AUTO_W_FRAC  = 0.58f;   // ancho del auto ~58% del carril
+            final float MOTO_W_FRAC  = 0.46f;   // 15% más grande, sigue más angosta que el auto
+            final float AUTO_FLAT    = 0.80f;   // “achate” 20% el alto final del auto
+            final float MOTO_FLAT    = 0.90f;   // moto apenas “achatada”
+            final float MAX_AR_AUTO  = 1.85f;   // tope AR para auto (alto/ancho)
+            final float MAX_AR_MOTO  = 1.60f;   // tope AR para moto
 
-                float startX = centerX - w / 2f;
-                vehiculo = new Auto(autoTex, startX, 20f, w, h, Lluvia.roadMinX(), Lluvia.roadMaxX());
+            if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
+                // ===== AUTO =====
+                float w = laneW * AUTO_W_FRAC;
+                float texAR = autoTex.getHeight() / (float) autoTex.getWidth(); // alto/ancho original
+                float usedAR = Math.min(texAR, MAX_AR_AUTO);
+                float h = w * usedAR * AUTO_FLAT;
+
+                float startX = Math.round(centerX - w / 2f);  // snap a píxel
+                vehiculo = new Auto(
+                        autoTex,
+                        startX,
+                        20f,
+                        w, h,
+                        Lluvia.roadMinX(),
+                        Lluvia.roadMaxX()
+                );
                 juegoIniciado = true;
                 gameOver = false;
 
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_2)) {
-                float w = laneW * MOTO_SCALE;
-                float aspect = motoTex.getHeight() / (float) motoTex.getWidth();
-                float h = w * aspect;
+                // ===== MOTO =====
+                float w = laneW * MOTO_W_FRAC;
+                float texAR = motoTex.getHeight() / (float) motoTex.getWidth();
+                float usedAR = Math.min(texAR, MAX_AR_MOTO);
+                float h = w * usedAR * MOTO_FLAT;
 
                 float startX = centerX - w / 2f;
-                vehiculo = new Moto(motoTex, startX, 100f, w, h);
+                vehiculo = new Moto(
+                        motoTex,
+                        startX,
+                        100f,
+                        w, h
+                );
                 juegoIniciado = true;
                 gameOver = false;
             }
             return;
         }
+
 
         // Game Over
         if (gameOver) {

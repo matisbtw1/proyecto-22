@@ -1,6 +1,7 @@
 AutoMalo.png
 bucket.png
 carretera.png
+cono.png
 drop.png
 drop.wav
 dropBad.png
