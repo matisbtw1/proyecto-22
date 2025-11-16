@@ -29,7 +29,7 @@ public class Auto extends Vehiculo {
         boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
         boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
 
-        if (Lluvia.areControlsInverted()) {
+        if (GestorObjetos.areControlsInverted()) {
             boolean temp = left; left = right; right = temp;
         }
 

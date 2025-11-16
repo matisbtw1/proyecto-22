@@ -8,7 +8,7 @@ public class MalusInvertControls implements Malus {
     }
 
     @Override
-    public void apply(Lluvia ctx, Vehiculo jugador) {
+    public void apply(GestorObjetos ctx, Vehiculo jugador) {
         ctx.activateInvertControls(durationMs);
     }
 }

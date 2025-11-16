@@ -10,8 +10,8 @@ public class Moto extends Vehiculo {
     private float inerciaX = 0f, inerciaY = 0f;
     private float factorDerrape = 0.96f;
 
-    private final float roadMinX = Lluvia.ROAD_LEFT;
-    private final float roadMaxX = Lluvia.ROAD_RIGHT;
+    private final float roadMinX = GestorObjetos.ROAD_LEFT;
+    private final float roadMaxX = GestorObjetos.ROAD_RIGHT;
 
     private final Rectangle hb = new Rectangle();
 
@@ -26,7 +26,7 @@ public class Moto extends Vehiculo {
         boolean up = Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W);
         boolean down = Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S);
 
-        if (Lluvia.areControlsInverted()) {
+        if (GestorObjetos.areControlsInverted()) {
             boolean tmpLR = left; left = right; right = tmpLR;
             boolean tmpUD = up; up = down; down = tmpUD;
         }
