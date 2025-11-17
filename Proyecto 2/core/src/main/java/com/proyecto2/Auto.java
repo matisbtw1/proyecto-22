@@ -25,21 +25,23 @@ public class Auto extends Vehiculo {
     }
 
     @Override
-    public void update(float dt) {
-        boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
-        boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
-
-        if (GestorObjetos.areControlsInverted()) {
-            boolean temp = left; left = right; right = temp;
-        }
+    protected void actualizarMovimiento(float dt) {
+        boolean left  = Gdx.input.isKeyPressed(Input.Keys.LEFT);
+        boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
 
         float dx = 0f;
-        if (left) dx -= speed * dt;
+        if (left)  dx -= speed * dt;
         if (right) dx += speed * dt;
 
         moveBy(dx, 0f);
+    }
+
+    @Override
+    protected void aplicarLimites() {
         if (bounds.x < roadMinX) bounds.x = roadMinX;
-        if (bounds.x + bounds.width > roadMaxX) bounds.x = roadMaxX - bounds.width;
+        if (bounds.x + bounds.width > roadMaxX) {
+            bounds.x = roadMaxX - bounds.width;
+        }
     }
 
     public Rectangle getHitbox(float sx, float sy) {

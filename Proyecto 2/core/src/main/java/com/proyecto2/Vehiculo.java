@@ -14,49 +14,61 @@ public abstract class Vehiculo {
 
     public Vehiculo(Texture texture, float x, float y, float width, float height) {
         this.texture = texture;
-        // Suavizado al escalar
-        this.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         this.bounds = new Rectangle(x, y, width, height);
     }
 
-    /** Lógica por frame */
-    public abstract void update(float dt);
+    // ================== TEMPLATE METHOD ==================
+    /**
+     * Template Method del patrón Template Method.
+     * Define la secuencia fija de actualización de cualquier vehículo:
+     * 1) Actualizar movimiento según su tipo.
+     * 2) Aplicar límites (carretera/pantalla).
+     */
+    public final void update(float dt) {
+        if (!visible) return;
+        actualizarMovimiento(dt); // definido por las subclases
+        aplicarLimites();         // hook, se puede sobrescribir
+    }
 
-    /** Dibujo básico usando el tamaño actual de bounds */
+    /**
+     * Paso obligatorio que cada tipo de vehículo debe implementar.
+     * Aquí se leen inputs, se calcula dx/dy y se actualiza bounds.
+     */
+    protected abstract void actualizarMovimiento(float dt);
+
+    /**
+     * Hook opcional: por defecto no hace nada.
+     * Las subclases pueden sobrescribir para limitar la posición.
+     */
+    protected void aplicarLimites() {
+        // Por defecto sin límites; las subclases pueden redefinir
+    }
+    // ======================================================
+
+    /** Movimiento genérico */
+    protected void moveBy(float dx, float dy) {
+        bounds.x += dx;
+        bounds.y += dy;
+    }
+
+    /** Dibujado genérico */
     public void render(SpriteBatch batch) {
         if (!visible) return;
         batch.draw(texture, bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
-    /** Ajusta el tamaño exacto */
-    public void setSize(float w, float h) { bounds.setSize(w, h); }
-
-    /** Escala multiplicando el tamaño actual */
-    public void setScale(float s) { bounds.setSize(bounds.width * s, bounds.height * s); }
-
-    /** Define el ancho objetivo y calcula el alto manteniendo proporción del sprite */
-    public void setSizeByWidth(float targetWidth) {
-        float ratio = texture.getHeight() / (float) texture.getWidth();
-        bounds.setSize(targetWidth, targetWidth * ratio);
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
-    /** Posicionamiento */
-    public void setPosition(float x, float y) { bounds.setPosition(x, y); }
-    public void moveBy(float dx, float dy) { bounds.setPosition(bounds.x + dx, bounds.y + dy); }
+    public boolean isVisible() {
+        return visible;
+    }
 
-    /** Centro en X/Y (útil para alinear a la mitad del carril) */
-    public void setCenterX(float cx) { bounds.x = cx - bounds.width * 0.5f; }
-    public float getCenterX() { return bounds.x + bounds.width * 0.5f; }
-    public float getCenterY() { return bounds.y + bounds.height * 0.5f; }
-
-    /** Visibilidad */
-    public void setVisible(boolean v) { visible = v; }
-    public boolean isVisible() { return visible; }
-
-    /** Relación de aspecto del sprite (alto/ancho) */
-    public float getAspect() { return texture.getHeight() / (float) texture.getWidth(); }
-
-    /** Hitbox reducida  */
+    /**
+     * Hitbox genérica: rectángulo centrado dentro de bounds
+     * escalado por factores sx, sy.
+     */
     public Rectangle getHitbox(float sx, float sy) {
         float w = bounds.width * sx;
         float h = bounds.height * sy;
@@ -69,7 +81,18 @@ public abstract class Vehiculo {
     /** Accesores básicos */
     public Rectangle getBounds() { return bounds; }
     public Texture getTexture() { return texture; }
+    public void setSizeByWidth(float targetWidth) {
+        float aspectRatio = texture.getHeight() / (float) texture.getWidth();
+        bounds.width = targetWidth;
+        bounds.height = targetWidth * aspectRatio;
+    }
+    public void setCenterX(float centerX) {
+        bounds.x = centerX - bounds.width / 2f;
+    }
+
 
     public void dispose() {
+        // Si algún día quieres liberar la textura aquí, hazlo con cuidado
+        // (ahora las texturas las maneja el Singleton AssetsJuego)
     }
 }

@@ -20,31 +20,37 @@ public class Moto extends Vehiculo {
     }
 
     @Override
-    public void update(float dt) {
-        boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
-        boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
-        boolean up = Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W);
-        boolean down = Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S);
-
-        if (GestorObjetos.areControlsInverted()) {
-            boolean tmpLR = left; left = right; right = tmpLR;
-            boolean tmpUD = up; up = down; down = tmpUD;
-        }
+  
+    protected void actualizarMovimiento(float dt) {
+        boolean left  = Gdx.input.isKeyPressed(Input.Keys.A);
+        boolean right = Gdx.input.isKeyPressed(Input.Keys.D);
+        boolean up    = Gdx.input.isKeyPressed(Input.Keys.W);
+        boolean down  = Gdx.input.isKeyPressed(Input.Keys.S);
 
         float dx = 0f, dy = 0f;
-        if (left) dx -= velocidad * dt;
+        if (left)  dx -= velocidad * dt;
         if (right) dx += velocidad * dt;
-        if (up) dy += velocidad * dt;
-        if (down) dy -= velocidad * dt;
+        if (up)    dy += velocidad * dt;
+        if (down)  dy -= velocidad * dt;
 
-        dx += inerciaX; dy += inerciaY;
-        bounds.x += dx; bounds.y += dy;
+        dx += inerciaX; 
+        dy += inerciaY;
+
+        bounds.x += dx;
+        bounds.y += dy;
+
         inerciaX = dx * factorDerrape;
         inerciaY = dy * factorDerrape;
-
-        if (bounds.x < roadMinX) bounds.x = roadMinX;
-        if (bounds.x + bounds.width > roadMaxX) bounds.x = roadMaxX - bounds.width;
-        if (bounds.y < 0) bounds.y = 0;
-        if (bounds.y + bounds.height > 480) bounds.y = 480 - bounds.height;
     }
+
+    @Override
+    protected void aplicarLimites() {
+        if (bounds.x < roadMinX) bounds.x = roadMinX;
+        if (bounds.x + bounds.width > roadMaxX)
+            bounds.x = roadMaxX - bounds.width;
+        if (bounds.y < 0) bounds.y = 0;
+        if (bounds.y + bounds.height > 480)
+            bounds.y = 480 - bounds.height;
+    }
+
 }
