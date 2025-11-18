@@ -66,11 +66,16 @@ public class Main extends ApplicationAdapter {
 
         if (juegoIniciado && !gameOver) {
             playerSpeedMul = gestor.isTurboActivo() ? gestor.getBonusVelocidad() : 1f;
+
+            // 👇 aquí conectamos el malus con el vehículo
+            vehiculo.setInvertControls(gestor.isControlsInverted());
+
             vehiculo.update(dt * playerSpeedMul);
             gestor.update(dt);
             gestor.chequearColision(vehiculo);
             if (gestor.getErrores() >= 3) gameOver = true;
         }
+
 
         // Fondo
         batch.begin();

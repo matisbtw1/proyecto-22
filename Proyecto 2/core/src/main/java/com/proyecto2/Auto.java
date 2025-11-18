@@ -26,8 +26,16 @@ public class Auto extends Vehiculo {
 
     @Override
     protected void actualizarMovimiento(float dt) {
-        boolean left  = Gdx.input.isKeyPressed(Input.Keys.LEFT);
-        boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+        // Soportar flechas + WASD
+        boolean left  = Gdx.input.isKeyPressed(Input.Keys.LEFT)  || Gdx.input.isKeyPressed(Input.Keys.A);
+        boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
+
+        // Invertir controles si el malus está activo
+        if (invertControls) {
+            boolean tmp = left;
+            left = right;
+            right = tmp;
+        }
 
         float dx = 0f;
         if (left)  dx -= speed * dt;
@@ -35,6 +43,7 @@ public class Auto extends Vehiculo {
 
         moveBy(dx, 0f);
     }
+
 
     @Override
     protected void aplicarLimites() {

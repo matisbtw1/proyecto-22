@@ -8,6 +8,7 @@ public abstract class Vehiculo {
     protected Texture texture;
     protected Rectangle bounds;
     protected boolean visible = true;
+    protected boolean invertControls = false;
 
     // Rectángulo temporal para hitbox 
     private final Rectangle tmpHitbox = new Rectangle();
@@ -15,6 +16,14 @@ public abstract class Vehiculo {
     public Vehiculo(Texture texture, float x, float y, float width, float height) {
         this.texture = texture;
         this.bounds = new Rectangle(x, y, width, height);
+    }
+    
+    public void setInvertControls(boolean invertControls) {
+        this.invertControls = invertControls;
+    }
+
+    public boolean isInvertControls() {
+        return invertControls;
     }
 
     // ================== TEMPLATE METHOD ==================
