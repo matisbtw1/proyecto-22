@@ -23,6 +23,8 @@ public class GestorObjetos {
     private static final int BONUS_TURBO  = 2;
     private static final int BONUS_VIDA   = 3;
     private static final int MALUS_INVERT = 4;
+    private FabricaObjetosJuego fabricaObjetos;
+
 
     private final Array<Rectangle> objetos = new Array<>();
     private final Array<Integer>  tipos    = new Array<>();
@@ -115,13 +117,16 @@ public class GestorObjetos {
     public GestorObjetos() {
         instance = this;
         this.dificultadStrategy = new DificultadNormalStrategy();
+        this.fabricaObjetos     = new FabricaNormal();
     }
 
-    // Sobrecarga opcional para inyectar otra dificultad
-    public GestorObjetos(DificultadStrategy dificultadStrategy) {
+    public GestorObjetos(DificultadStrategy dificultadStrategy,
+                         FabricaObjetosJuego fabricaObjetos) {
         instance = this;
         this.dificultadStrategy = dificultadStrategy;
+        this.fabricaObjetos     = fabricaObjetos;
     }
+
 
     public void crear() {
         // la música de fondo la maneja el singleton de assets
@@ -266,18 +271,31 @@ public class GestorObjetos {
                     errores++;
                     AssetsJuego.get().sfxChoque.play();
                 } else if (tipo == MALUS_INVERT) {
-                    Malus malus = new MalusInvertControls(DURACION_INVERT_MS);
-                    malus.apply(this, vehiculo);
+                    if (fabricaObjetos != null) {
+                        Malus malus = fabricaObjetos.crearMalusInvert(DURACION_INVERT_MS);
+                        malus.apply(this, vehiculo);
+                    }
                 } else {
                     Bonus bonus = null;
-                    switch (tipo) {
-                        case BONUS_ESCUDO: bonus = new BonusEscudo(); break;
-                        case BONUS_TURBO:  bonus = new BonusTurbo();  break;
-                        case BONUS_VIDA:   bonus = new BonusVida();   break;
-                        default: break;
+                    if (fabricaObjetos != null) {
+                        switch (tipo) {
+                            case BONUS_ESCUDO:
+                                bonus = fabricaObjetos.crearBonusEscudo();
+                                break;
+                            case BONUS_TURBO:
+                                bonus = fabricaObjetos.crearBonusTurbo();
+                                break;
+                            case BONUS_VIDA:
+                                bonus = fabricaObjetos.crearBonusVida();
+                                break;
+                            default:
+                                break;
+                        }
                     }
-                    if (bonus != null) bonus.apply(this, vehiculo);
-                    AssetsJuego.get().sfxPickup.play();
+                    if (bonus != null) {
+                        bonus.apply(this, vehiculo);
+                        AssetsJuego.get().sfxPickup.play();
+                    }
                 }
 
                 objetos.removeIndex(i);
