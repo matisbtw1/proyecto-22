@@ -26,24 +26,28 @@ public class Auto extends Vehiculo {
 
     @Override
     protected void actualizarMovimiento(float dt) {
-        // Soportar flechas + WASD
         boolean left  = Gdx.input.isKeyPressed(Input.Keys.LEFT)  || Gdx.input.isKeyPressed(Input.Keys.A);
         boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
 
-        // Invertir controles si el malus está activo
         if (invertControls) {
             boolean tmp = left;
-            left = right;
+            left  = right;
             right = tmp;
         }
-
+        
         float dx = 0f;
         if (left)  dx -= speed * dt;
         if (right) dx += speed * dt;
 
+        // Efecto del aceite: fuerza que empuja hacia un lado
+        if (GestorObjetos.isAceiteActivo()) {
+            int dir = GestorObjetos.getAceiteDir(); // -1 o 1
+            dx += dir * speed * GestorObjetos.getAceiteForce() * dt;
+
+        }
+
         moveBy(dx, 0f);
     }
-
 
     @Override
     protected void aplicarLimites() {

@@ -67,14 +67,19 @@ public class Main extends ApplicationAdapter {
         if (juegoIniciado && !gameOver) {
             playerSpeedMul = gestor.isTurboActivo() ? gestor.getBonusVelocidad() : 1f;
 
-            // 👇 aquí conectamos el malus con el vehículo
+         // SIEMPRE sincronizamos el estado de controles invertidos al vehículo
             vehiculo.setInvertControls(gestor.isControlsInverted());
+            
+            // Si está el malus de frenos activo, el jugador no se actualiza (no puede moverse)
+            if (!gestor.isFrenoActivo()) {
+                vehiculo.update(dt * playerSpeedMul);
+            }
 
-            vehiculo.update(dt * playerSpeedMul);
             gestor.update(dt);
             gestor.chequearColision(vehiculo);
             if (gestor.getErrores() >= 3) gameOver = true;
         }
+
 
 
         // Fondo

@@ -23,6 +23,10 @@ public class GestorObjetos {
     private static final int BONUS_TURBO  = 2;
     private static final int BONUS_VIDA   = 3;
     private static final int MALUS_INVERT = 4;
+    private static final int MALUS_ACEITE = 5;
+    private static final int MALUS_HOYO   = 6;
+    private static final int MALUS_FRENO  = 7;
+
     private FabricaObjetosJuego fabricaObjetos;
 
 
@@ -88,11 +92,54 @@ public class GestorObjetos {
     private long    invertDurationMs = 0L;
     private static final long DURACION_INVERT_MS = 5000L;
 
+    // Malus (aceite: derrape lateral forzado)
+    private boolean aceiteActivo   = false;
+    private long    aceiteStartMs  = 0L;
+    private long    aceiteDurationMs = 0L;
+    private int     aceiteDir      = 0;   // -1 = izquierda, 1 = derecha
+    private static final long DURACION_ACEITE_MS = 1500L; // 1.5s aprox
+    private static final float ACEITE_FORCE = 0.7f; // % de la velocidad base
+
+    // Malus (freno brutal: jugador no se puede mover)
+    private boolean frenoActivo   = false;
+    private long    frenoStartMs  = 0L;
+    private static final long DURACION_FRENO_MS = 1200L; // 1.2s aprox
+
+    public boolean isFrenoActivo() { return frenoActivo; }
+
+    
+    public static boolean isAceiteActivo() {
+        return instance != null && instance.aceiteActivo;
+    }
+
+    public static int getAceiteDir() {
+        return instance != null ? instance.aceiteDir : 0;
+    }
+    
+    public static float getAceiteForce() {
+        return ACEITE_FORCE;
+    }
+
+    // Malus (hoyo: slow)
+    private boolean slowActivo   = false;
+    private long    slowStartMs  = 0L;
+    private static final long DURACION_HOYO_MS = 2000L; // 2s
+    private float   slowFactor   = 0.5f; // 50% de la velocidad
+
+    public boolean isSlowActivo() { return slowActivo; }
+    public float getSlowFactor()  { return slowFactor; }
+
+    
     // Probabilidades
-    private float probEscudo      = 0.07f;
-    private float probTurbo       = 0.07f;
-    private float probVida        = 0.07f;
-    private float probMalusInvert = 0.06f;
+    private float probEscudo      = 0.06f;
+    private float probTurbo       = 0.06f;
+    private float probVida        = 0.06f;
+    private float probMalusInvert = 0.05f;
+    private float probMalusAceite = 0.05f;
+    private float probMalusHoyo   = 0.05f;
+    private float probMalusFreno  = 0.05f;
+    // el resto del rango (hasta 1.0) se lo queda ENEMIGO
+
 
     // Singleton "lógico" para la consulta areControlsInverted()
     private static GestorObjetos instance = null;
@@ -141,11 +188,24 @@ public class GestorObjetos {
         // 1) decidir tipo
         float rand = MathUtils.random();
         int tipo;
-        if (rand < probEscudo) tipo = BONUS_ESCUDO;
-        else if (rand < probEscudo + probTurbo) tipo = BONUS_TURBO;
-        else if (rand < probEscudo + probTurbo + probVida) tipo = BONUS_VIDA;
-        else if (rand < probEscudo + probTurbo + probVida + probMalusInvert) tipo = MALUS_INVERT;
-        else tipo = ENEMIGO;
+
+        float p1 = probEscudo;
+        float p2 = p1 + probTurbo;
+        float p3 = p2 + probVida;
+        float p4 = p3 + probMalusInvert;
+        float p5 = p4 + probMalusAceite;
+        float p6 = p5 + probMalusHoyo;
+        float p7 = p6 + probMalusFreno;
+
+        if      (rand < p1) tipo = BONUS_ESCUDO;
+        else if (rand < p2) tipo = BONUS_TURBO;
+        else if (rand < p3) tipo = BONUS_VIDA;
+        else if (rand < p4) tipo = MALUS_INVERT;
+        else if (rand < p5) tipo = MALUS_ACEITE;
+        else if (rand < p6) tipo = MALUS_HOYO;
+        else if (rand < p7) tipo = MALUS_FRENO;
+        else                tipo = ENEMIGO;
+
         
         // Si es enemigo, verificar máximo permitido por la dificultad
         if (tipo == ENEMIGO && dificultadStrategy != null) {
@@ -201,6 +261,9 @@ public class GestorObjetos {
             case BONUS_TURBO:  return a.texTurbo;
             case BONUS_VIDA:   return a.texVida;
             case MALUS_INVERT: return a.texCono;
+            case MALUS_ACEITE: return a.texAceite;
+            case MALUS_HOYO: return a.texHoyo;
+            case MALUS_FRENO: return a.texFreno;
             case ENEMIGO:
             default:           return a.texPolicia;
         }
@@ -221,7 +284,10 @@ public class GestorObjetos {
             spawnObjeto();
         }
 
-        float mul = turboActivo ? bonusVelocidad : 1f;
+        float mul = 1f;
+        if (turboActivo) mul *= bonusVelocidad;
+        if (slowActivo)  mul *= slowFactor;
+
         for (int i = objetos.size - 1; i >= 0; i--) {
             Rectangle r = objetos.get(i);
             r.y -= speed * dt * mul;
@@ -242,6 +308,13 @@ public class GestorObjetos {
         if (turboActivo    && TimeUtils.timeSinceMillis(turboStartMs)   > DURACION_TURBO_MS)   turboActivo    = false;
         if (justPickedVida && TimeUtils.timeSinceMillis(vidaStartMs)    > DURACION_VIDA_MS)    justPickedVida = false;
         if (controlsInverted && TimeUtils.timeSinceMillis(invertStartMs) > invertDurationMs)   controlsInverted = false;
+        if (aceiteActivo && TimeUtils.timeSinceMillis(aceiteStartMs) > aceiteDurationMs) {
+            aceiteActivo = false;
+            aceiteDir    = 0;
+        }
+        if (slowActivo && TimeUtils.timeSinceMillis(slowStartMs) > DURACION_HOYO_MS) slowActivo = false;
+        if (frenoActivo && TimeUtils.timeSinceMillis(frenoStartMs) > DURACION_FRENO_MS) frenoActivo = false;
+
     }
 
     // === Render ===
@@ -270,32 +343,33 @@ public class GestorObjetos {
                 if (tipo == ENEMIGO && !escudoActivo) {
                     errores++;
                     AssetsJuego.get().sfxChoque.play();
+
                 } else if (tipo == MALUS_INVERT) {
-                    if (fabricaObjetos != null) {
-                        Malus malus = fabricaObjetos.crearMalusInvert(DURACION_INVERT_MS);
-                        malus.apply(this, vehiculo);
-                    }
+                    Malus malus = new MalusInvertControls(DURACION_INVERT_MS);
+                    malus.apply(this, vehiculo);
+
+                } else if (tipo == MALUS_ACEITE) {
+                    Malus malus = new MalusAceite(DURACION_ACEITE_MS);
+                    malus.apply(this, vehiculo);
+
+                } else if (tipo == MALUS_HOYO) {
+                    Malus malus = new MalusHoyo(DURACION_HOYO_MS, 0.5f);
+                    malus.apply(this, vehiculo);
+
+                } else if (tipo == MALUS_FRENO) {
+                    Malus malus = new MalusFrenos(DURACION_FRENO_MS);
+                    malus.apply(this, vehiculo);
+
                 } else {
                     Bonus bonus = null;
-                    if (fabricaObjetos != null) {
-                        switch (tipo) {
-                            case BONUS_ESCUDO:
-                                bonus = fabricaObjetos.crearBonusEscudo();
-                                break;
-                            case BONUS_TURBO:
-                                bonus = fabricaObjetos.crearBonusTurbo();
-                                break;
-                            case BONUS_VIDA:
-                                bonus = fabricaObjetos.crearBonusVida();
-                                break;
-                            default:
-                                break;
-                        }
+                    switch (tipo) {
+                        case BONUS_ESCUDO: bonus = new BonusEscudo(); break;
+                        case BONUS_TURBO:  bonus = new BonusTurbo();  break;
+                        case BONUS_VIDA:   bonus = new BonusVida();   break;
+                        default: break;
                     }
-                    if (bonus != null) {
-                        bonus.apply(this, vehiculo);
-                        AssetsJuego.get().sfxPickup.play();
-                    }
+                    if (bonus != null) bonus.apply(this, vehiculo);
+                    AssetsJuego.get().sfxPickup.play();
                 }
 
                 objetos.removeIndex(i);
@@ -333,6 +407,28 @@ public class GestorObjetos {
         invertStartMs    = TimeUtils.millis();
         invertDurationMs = dur;
     }
+    
+    public void activarAceite(long durMs) {
+        aceiteActivo    = true;
+        aceiteStartMs   = TimeUtils.millis();
+        aceiteDurationMs = durMs;
+        // Elegir aleatorio si patina hacia izquierda (-1) o derecha (1)
+        aceiteDir = MathUtils.randomBoolean() ? -1 : 1;
+    }
+    
+    public void activarHoyo(long durMs, float factor) {
+        slowActivo  = true;
+        slowStartMs = TimeUtils.millis();
+        slowFactor  = factor;
+    }
+
+    public void activarFrenos(long durMs) {
+        frenoActivo  = true;
+        frenoStartMs = TimeUtils.millis();
+        // podrías ignorar durMs y usar DURACION_FRENO_MS, o guardar durMs si quieres
+    }
+
+
 
     // === Getters para HUD / lógica externa ===
 

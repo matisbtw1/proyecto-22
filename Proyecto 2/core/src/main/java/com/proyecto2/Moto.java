@@ -50,6 +50,11 @@ public class Moto extends Vehiculo {
         // Aplicar inercia SOLO en X
         float dx = dxInput + inerciaX;
 
+        if (GestorObjetos.isAceiteActivo()) {
+            int dir = GestorObjetos.getAceiteDir();
+            dx += dir * velocidad * 0.7f * dt; // igual idea que en Auto
+        }
+        
         bounds.x += dx;
         bounds.y += dy;
 

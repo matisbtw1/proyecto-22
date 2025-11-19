@@ -22,6 +22,9 @@ public final class AssetsJuego {
     public final Texture texTurbo;
     public final Texture texVida;
     public final Texture texCono;
+    public final Texture texAceite;
+    public final Texture texHoyo;
+    public final Texture texFreno;
 
     // === Audio ===
     public final Music musicFondo;
@@ -38,6 +41,9 @@ public final class AssetsJuego {
         texTurbo       = new Texture(Gdx.files.internal("turbo.png"));
         texVida        = new Texture(Gdx.files.internal("vida.png"));
         texCono        = new Texture(Gdx.files.internal("cono.png"));
+        texAceite      = new Texture(Gdx.files.internal("aceite.png"));
+        texHoyo        = new Texture(Gdx.files.internal("hoyo.png"));
+        texFreno       = new Texture(Gdx.files.internal("freno.png"));
 
         // Suavizar al escalar
         texCarretera.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
@@ -48,6 +54,9 @@ public final class AssetsJuego {
         texTurbo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         texVida.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         texCono.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texAceite.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texHoyo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texFreno.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // Audio
         musicFondo = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));   // cambia el nombre si tu música es otra
@@ -73,6 +82,9 @@ public final class AssetsJuego {
         texTurbo.dispose();
         texVida.dispose();
         texCono.dispose();
+        texAceite.dispose();
+        texHoyo.dispose();
+        texFreno.dispose();
 
         musicFondo.dispose();
         sfxPickup.dispose();
