@@ -1,14 +1,15 @@
 package com.proyecto2;
 
 public class MalusInvertControls implements Malus {
-    private final long durationMs;
+
+    private final EfectoJugadorStrategy estrategia;
 
     public MalusInvertControls(long durationMs) {
-        this.durationMs = durationMs;
+        this.estrategia = new InvertirControlesStrategy(durationMs);
     }
 
     @Override
     public void apply(GestorObjetos ctx, Vehiculo jugador) {
-        ctx.activateInvertControls(durationMs);
+        estrategia.apply(ctx, jugador);
     }
 }

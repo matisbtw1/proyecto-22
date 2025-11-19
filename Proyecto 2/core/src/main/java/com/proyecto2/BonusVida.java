@@ -1,8 +1,12 @@
 package com.proyecto2;
 
 public class BonusVida implements Bonus {
+
+    private final EfectoJugadorStrategy estrategia =
+            new RepararVidaStrategy();
+
     @Override
     public void apply(GestorObjetos ctx, Vehiculo jugador) {
-        ctx.repararVida();
+        estrategia.apply(ctx, jugador);
     }
 }

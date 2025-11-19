@@ -32,6 +32,14 @@ public class GestorObjetos {
     private long  spawnIntervalMs = 750;
     private float speed           = 260f;
 
+    // Valores base para la dificultad
+    private static final long  BASE_SPAWN_INTERVAL_MS = 750L;
+    private static final float BASE_SPEED             = 260f;
+    private static final int   BASE_MAX_ENEMIGOS      = 4;
+
+    // Estrategia de dificultad
+    private DificultadStrategy dificultadStrategy;
+
     // Puntaje y errores
     private int   errores          = 0;
     private int   puntos           = 0;
@@ -106,6 +114,13 @@ public class GestorObjetos {
     // === Ciclo de vida ===
     public GestorObjetos() {
         instance = this;
+        this.dificultadStrategy = new DificultadNormalStrategy();
+    }
+
+    // Sobrecarga opcional para inyectar otra dificultad
+    public GestorObjetos(DificultadStrategy dificultadStrategy) {
+        instance = this;
+        this.dificultadStrategy = dificultadStrategy;
     }
 
     public void crear() {
@@ -126,6 +141,23 @@ public class GestorObjetos {
         else if (rand < probEscudo + probTurbo + probVida) tipo = BONUS_VIDA;
         else if (rand < probEscudo + probTurbo + probVida + probMalusInvert) tipo = MALUS_INVERT;
         else tipo = ENEMIGO;
+        
+        // Si es enemigo, verificar máximo permitido por la dificultad
+        if (tipo == ENEMIGO && dificultadStrategy != null) {
+            int maxEnemigos = dificultadStrategy.calcularMaxEnemigos(
+                    BASE_MAX_ENEMIGOS, puntos);
+
+            int actuales = 0;
+            for (int i = 0; i < tipos.size; i++) {
+                if (tipos.get(i) == ENEMIGO) actuales++;
+            }
+            if (actuales >= maxEnemigos) {
+                // No spawneamos más enemigos ahora
+                lastSpawnTime = TimeUtils.millis();
+                return;
+            }
+        }
+
 
         // 2) carril aleatorio distinto al anterior
         int lane;
@@ -172,6 +204,14 @@ public class GestorObjetos {
     // === Update / movimiento ===
 
     public void update(float dt) {
+    	// Actualizar parámetros en función de la dificultad y el puntaje
+        if (dificultadStrategy != null) {
+            spawnIntervalMs = dificultadStrategy.calcularSpawnIntervalMs(
+                    BASE_SPAWN_INTERVAL_MS, puntos);
+            speed = dificultadStrategy.calcularSpeed(
+                    BASE_SPEED, puntos);
+        }
+    	
         if (TimeUtils.timeSinceMillis(lastSpawnTime) > spawnIntervalMs) {
             spawnObjeto();
         }
