@@ -29,10 +29,9 @@ public final class AssetsJuego {
     // === Audio ===
     public final Music musicFondo;
     public final Sound sfxPickup;
-    public final Sound sfxChoque; // si no tienes hurt.ogg puedes dejarlo sin usar
+    public final Sound sfxChoque; 
 
     private AssetsJuego() {
-        // OJO: los nombres deben coincidir con los archivos en tu carpeta assets
         texCarretera   = new Texture(Gdx.files.internal("carretera.png"));
         texAutoJugador = new Texture(Gdx.files.internal("player_lambo.png"));
         texMotoJugador = new Texture(Gdx.files.internal("MotoRoja.png"));
@@ -59,9 +58,9 @@ public final class AssetsJuego {
         texFreno.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // Audio
-        musicFondo = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));   // cambia el nombre si tu música es otra
+        musicFondo = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));  
         sfxPickup  = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
-        sfxChoque  = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));   // opcional
+        sfxChoque  = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));   
     }
 
     /** Acceso al singleton */

@@ -6,9 +6,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 
 public class Moto extends Vehiculo {
-	private float velocidad = 260f;      // si quieres, un poco más baja que antes
-    private float inerciaX = 0f;         // solo inercia horizontal
-    private float factorDerrapeX = 1.2f; // 0.6 = derrapa pero se controla
+	private float velocidad = 260f;      
+    private float inerciaX = 0f;         
+    private float factorDerrapeX = 1.2f; 
 
     private final float roadMinX = GestorObjetos.ROAD_LEFT;
     private final float roadMaxX = GestorObjetos.ROAD_RIGHT;
@@ -38,7 +38,6 @@ public class Moto extends Vehiculo {
             down = tmpU;
         }
 
-        // Movimiento "puro" por input (sin inercia aún)
         float dxInput = 0f;
         float dy      = 0f;
 
@@ -52,23 +51,19 @@ public class Moto extends Vehiculo {
 
         if (GestorObjetos.isAceiteActivo()) {
             int dir = GestorObjetos.getAceiteDir();
-            dx += dir * velocidad * 0.7f * dt; // igual idea que en Auto
+            dx += dir * velocidad * 0.7f * dt;
         }
         
         bounds.x += dx;
         bounds.y += dy;
-
-	     // Actualizar inercia horizontal:
-	     // Si NO estoy presionando en X, que la inercia se vaya pero MUY de a poco
+        
 	     if (!left && !right) {
-	         inerciaX *= 0.92f;           // antes 0.6 → ahora resbala mucho más
+	         inerciaX *= 0.92f;           
 	         if (Math.abs(inerciaX) < 2f) {
 	             inerciaX = 0f;
 	         }
 	     } else {
-	         // Si estoy girando, acumulo un poco de inercia extra
-	         // (se siente que la cola "sigue" el giro)
-	         inerciaX += dxInput * factorDerrapeX;   // antes era solo asignar
+	         inerciaX += dxInput * factorDerrapeX;   
 	         // Limitar la inercia máxima para que no se descontrole
 	         float maxInercia = velocidad * dt * 1.5f;
 	         if (inerciaX >  maxInercia) inerciaX =  maxInercia;

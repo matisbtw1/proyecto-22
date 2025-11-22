@@ -2,16 +2,11 @@ package com.proyecto2;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-/**
- * Clase Road:
- * - Ya NO carga texturas (usa AssetsJuego).
- * - Ya NO libera texturas (assets globales).
- * - Solo dibuja la carretera.
- */
+
 public class Road {
 
     public Road() {
-        // Nada que cargar aquí
+
     }
 
     /** Renderiza el fondo completo */
@@ -39,6 +34,5 @@ public class Road {
     /** Road NO debe liberar la textura */
     public void dispose() {
         // Intencionalmente vacío
-        // Los assets se liberan en AssetsJuego.dispose()
     }
 }

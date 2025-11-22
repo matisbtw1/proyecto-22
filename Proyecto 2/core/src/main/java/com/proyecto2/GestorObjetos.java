@@ -13,7 +13,7 @@ import com.badlogic.gdx.utils.TimeUtils;
  * - Actualiza posiciones.
  * - Maneja colisiones, puntaje, vidas y estados (escudo, turbo, invert).
  * 
- * YA NO carga ni libera assets: usa AssetsJuego.
+ *
  */
 public class GestorObjetos {
 
@@ -176,9 +176,6 @@ public class GestorObjetos {
 
 
     public void crear() {
-        // la música de fondo la maneja el singleton de assets
-        AssetsJuego.get().musicFondo.setLooping(true);
-        AssetsJuego.get().musicFondo.play();
         spawnObjeto();
     }
 
@@ -425,7 +422,6 @@ public class GestorObjetos {
     public void activarFrenos(long durMs) {
         frenoActivo  = true;
         frenoStartMs = TimeUtils.millis();
-        // podrías ignorar durMs y usar DURACION_FRENO_MS, o guardar durMs si quieres
     }
 
 
@@ -440,7 +436,6 @@ public class GestorObjetos {
     public boolean isControlsInverted() { return controlsInverted; }
     public float getBonusVelocidad() { return bonusVelocidad; }
 
-    // Ya no hacemos dispose de assets aquí, porque no somos dueños.
     public void destruir() {
         objetos.clear();
         tipos.clear();

@@ -21,7 +21,7 @@ public class Main extends ApplicationAdapter {
     private GestorObjetos gestor;
     private Vehiculo vehiculo;
 
-    // referencias a las texturas del singleton (NO se hace dispose directo)
+    // referencias a las texturas del singleton
     private Texture autoTex;
     private Texture motoTex;
 
@@ -42,10 +42,10 @@ public class Main extends ApplicationAdapter {
         // Inicializamos el singleton de assets
         AssetsJuego assets = AssetsJuego.get();
 
-        // Fondo (tu clase Road puede seguir como está)
+        // Fondo 
         road = new Road();
 
-        // Texturas del jugador (solo referencias, no se dispone aquí)
+        // Texturas del jugador
         autoTex = assets.texAutoJugador;
         motoTex = assets.texMotoJugador;
 
@@ -67,10 +67,10 @@ public class Main extends ApplicationAdapter {
         if (juegoIniciado && !gameOver) {
             playerSpeedMul = gestor.isTurboActivo() ? gestor.getBonusVelocidad() : 1f;
 
-         // SIEMPRE sincronizamos el estado de controles invertidos al vehículo
+         // sincronizamos el estado de controles invertidos al vehículo
             vehiculo.setInvertControls(gestor.isControlsInverted());
             
-            // Si está el malus de frenos activo, el jugador no se actualiza (no puede moverse)
+            // Si está el malus de frenos activo, el jugador no se actualiza
             if (!gestor.isFrenoActivo()) {
                 vehiculo.update(dt * playerSpeedMul);
             }
@@ -100,7 +100,7 @@ public class Main extends ApplicationAdapter {
             float centerX = (GestorObjetos.roadMinX() + GestorObjetos.roadMaxX()) / 2f;
             float laneW   = GestorObjetos.laneWidth();
 
-            // Parámetros de escala (los mismos que tenías)
+            // Parámetros de escala
             final float AUTO_W_FRAC  = 0.58f;
             final float MOTO_W_FRAC  = 0.46f;
             final float AUTO_FLAT    = 0.80f;

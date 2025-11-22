@@ -21,6 +21,6 @@ public class DificultadNormalStrategy implements DificultadStrategy {
     public int calcularMaxEnemigos(int baseMaxEnemigos, int puntos) {
         int extra = puntos / 800; // cada 800 puntos, 1 enemigo más
         int max = baseMaxEnemigos + extra;
-        return Math.min(max, 12); // límite duro para no llenar la pantalla
+        return Math.min(max, 12);
     }
 }
